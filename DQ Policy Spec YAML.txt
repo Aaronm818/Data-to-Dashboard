@@ -1,0 +1,263 @@
+policy_spec_version: "0.1.0"
+name: "AI-Ready Data Quality Remediation Policy"
+purpose: "Standard remediation actions for common data quality issues to prepare data for AI-driven dashboard generation."
+default_locale: "en-US"
+default_time_zone: "UTC"
+
+governance:
+  principles:
+    - id: "P1"
+      text: "Prefer missing over misleading. Do not guess values unless confidence is high and rules are deterministic."
+    - id: "P2"
+      text: "Never silently coerce core identifiers or dataset grain. Flag and require human decision."
+    - id: "P3"
+      text: "All automated changes must be logged (before/after, rule id, confidence, counts)."
+  audit:
+    enabled: true
+    store_before_after_samples: true
+    sample_size: 50
+    emit_reports:
+      - "remediation_summary"
+      - "column_quality_ledger"
+      - "ai_readiness_score"
+
+scoping:
+  applies_to:
+    source_types: ["csv", "excel", "sql", "api", "parquet", "json", "delta", "iceberg", "other"]
+  severity_levels: ["info", "warn", "error"]
+  enforcement_modes:
+    - "monitor_only"
+    - "enforce"
+  default_enforcement_mode: "enforce"
+
+classification:
+  column_roles:
+    identifier: {criticality: "critical"}
+    timestamp: {criticality: "critical"}
+    measure: {criticality: "high"}
+    dimension: {criticality: "medium"}
+    status: {criticality: "medium"}
+    free_text: {criticality: "low"}
+    geo: {criticality: "medium"}
+    foreign_key: {criticality: "high"}
+    derived: {criticality: "low"}
+    metadata: {criticality: "low"}
+
+null_handling:
+  trim_whitespace: true
+  whitespace_tokens:
+    - ""
+    - " "
+    - "\t"
+    - "\n"
+    - "\r"
+    - "\u00A0"   # non-breaking space
+  null_tokens_case_insensitive:
+    - "null"
+    - "n/a"
+    - "na"
+    - "none"
+    - "nan"
+  preserve_phrases:
+    - "No challenges encountered"
+    - "none required"
+  treat_zero_string_as_null:
+    enabled: false
+    applies_to_roles: ["dimension", "status"]
+    note: "Enable only if a specific column’s business rules define '0' as missing."
+
+normalization:
+  casing:
+    default: "preserve"
+    rules:
+      - match:
+          column_role_in: ["status"]
+        action:
+          casing: "titlecase"
+      - match:
+          column_name_regex: "(?i)email"
+        action:
+          casing: "lowercase"
+  string_cleanup:
+    collapse_internal_whitespace: true
+    normalize_unicode: true
+
+enumerations:
+  enable_canonicalization: true
+  auto_build_mapping:
+    enabled: true
+    dominance_threshold: 0.80     # if a canonical value clearly dominates variants
+    low_frequency_threshold: 0.005 # values below this rate are candidates for mapping or "OTHER"
+    similarity:
+      method: "fuzzy"
+      max_edit_distance_ratio: 0.15
+  actions:
+    canonicalize:
+      automation: "programmatic"
+      confidence_required: 0.90
+      fallback: "human_review"
+    collapse_rare_to_other:
+      enabled: true
+      other_token: "OTHER"
+      automation: "programmatic"
+      confidence_required: 0.95
+
+type_coercion:
+  allow_safe_casts: true
+  safe_cast_matrix:
+    - from: "string"
+      to: "integer"
+      allowed_if: "all_values_match_regex"
+    - from: "string"
+      to: "decimal"
+      allowed_if: "all_values_match_regex"
+    - from: "string"
+      to: "boolean"
+      allowed_if: "values_in_allowed_set"
+    - from: "string"
+      to: "date"
+      allowed_if: "parse_success_rate_above_threshold"
+    - from: "string"
+      to: "datetime"
+      allowed_if: "parse_success_rate_above_threshold"
+  parse_thresholds:
+    date_time_parse_success_rate_min: 0.98
+  failure_behavior:
+    on_cast_failure: "set_null_and_flag"  # or "reject_row" for critical fields
+
+constraints:
+  required_fields:
+    - role: "identifier"
+      required: true
+      failure_action: "quarantine_row"
+      owner: "human"
+    - role: "timestamp"
+      required: true
+      failure_action: "quarantine_row"
+      owner: "human"
+  uniqueness:
+    enforce_primary_key_uniqueness:
+      enabled: false
+      note: "Do not enforce without explicit PK selection; detection only."
+    inferred_pk_handling:
+      if_primary_key_candidate_true:
+        action: "flag_for_human_confirmation"
+        owner: "human"
+
+range_validations:
+  enable: true
+  built_in:
+    percentage:
+      detect_if:
+        any:
+          - semantic_inference.domain_specific.is_percentage: true
+          - column_name_regex: "(?i)percent|pct|rate"
+      range: {min: 0.0, max: 100.0}
+      invalid_action: "set_null_and_flag"
+      owner: "programmatic"
+    non_negative:
+      detect_if:
+        column_role_in: ["measure"]
+      range: {min: 0.0}
+      invalid_action: "flag_only"
+      owner: "human"
+  outliers:
+    detection:
+      enabled: true
+      method: "iqr"
+      iqr_multiplier: 1.5
+    action: "flag_only"
+    owner: "human"
+    note: "Do not remove or winsorize automatically."
+
+pii_handling:
+  enabled: true
+  detection_sources:
+    - "semantic_inference.pii"
+    - "regex_signatures"
+  default_action_by_classification:
+    public: "drop_or_mask"
+    internal: "mask"
+    confidential: "mask"
+    restricted: "mask"
+  masking:
+    methods:
+      email: "hash"
+      phone: "hash"
+      name: "tokenize"
+      ssn: "drop"
+      ip: "hash"
+  enforcement:
+    if_contains_pii_true_and_not_allowed: "reject_dataset"
+  owner: "programmatic"
+  human_review_required_if:
+    - "pii_detected_in_free_text"
+
+grain_and_time:
+  grain_validation:
+    enabled: true
+    rules:
+      - id: "GRAIN1"
+        description: "Reject if dataset grain cannot be determined for analytics."
+        detect_if:
+          all:
+            - record_shape.wide_or_long_hint: "unknown"
+            - record_shape.grain_hypothesis: ""
+        action: "human_required"
+  time_column_candidate_handling:
+    enabled: true
+    if_multiple_candidates: "human_required"
+    if_no_candidates_and_time_required: "human_required"
+
+free_text:
+  default_action: "preserve_raw_exclude_from_metrics"
+  optional_nlp_enrichment:
+    enabled: false
+    tasks:
+      - "topic_cluster"
+      - "issue_tagging"
+      - "sentiment"
+    owner: "ai"
+
+dataset_decisions:
+  reject_dataset_if:
+    - condition: "pii_policy_violation"
+      owner: "programmatic"
+    - condition: "unresolved_grain"
+      owner: "human"
+  proceed_if:
+    - condition: "only_optional_columns_affected"
+    - condition: "all_critical_fields_valid_after_remediation"
+
+outputs:
+  remediation_log:
+    enabled: true
+    schema:
+      fields:
+        - "run_id"
+        - "dataset_id"
+        - "entity_name"
+        - "column_name"
+        - "rule_id"
+        - "issue_type"
+        - "action"
+        - "owner"
+        - "confidence"
+        - "affected_count"
+        - "before_examples"
+        - "after_examples"
+  quality_flags_column:
+    enabled: true
+    name: "_dq_flags"
+    format: "array<string>"
+  quarantine:
+    enabled: true
+    target: "staging_quarantine"
+    include_reason: true
+  ai_readiness_score:
+    enabled: true
+    weights:
+      ambiguity: 0.40
+      validity: 0.25
+      consistency: 0.20
+      completeness: 0.15
