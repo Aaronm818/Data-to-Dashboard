@@ -1,0 +1,352 @@
+#!/usr/bin/env python3
+"""
+DQ Remediation Engine
+Applies programmatic fixes identified by the policy-driven profiler.
+Generates before/after comparison and human review report.
+"""
+
+import pandas as pd
+import numpy as np
+import json
+import yaml
+import hashlib
+from pathlib import Path
+from datetime import datetime
+from typing import Dict, List, Tuple, Any
+import argparse
+
+
+class RemediationEngine:
+    """Applies programmatic data quality fixes per policy"""
+    
+    def __init__(self, policy_path: str = 'config/dq_policy_spec.yaml'):
+        self.policy_path = Path(policy_path)
+        with open(policy_path, 'r') as f:
+            self.policy = yaml.safe_load(f)
+        
+        self.remediation_log = []
+        self.timestamp = datetime.utcnow().isoformat() + 'Z'
+    
+    def apply_trim_whitespace(self, df: pd.DataFrame, issues: List[Dict]) -> pd.DataFrame:
+        """Trim whitespace from string columns per policy"""
+        df_remediated = df.copy()
+        
+        for issue in issues:
+            if issue['issue_type'] == 'whitespace_not_trimmed':
+                col = issue['column']
+                before_sample = df[col].dropna().head(5).tolist()
+                
+                # Apply trim
+                df_remediated[col] = df_remediated[col].apply(
+                    lambda x: x.strip() if isinstance(x, str) else x
+                )
+                
+                after_sample = df_remediated[col].dropna().head(5).tolist()
+                
+                self.remediation_log.append({
+                    'column': col,
+                    'action': 'trim_whitespace',
+                    'affected_count': issue['count'],
+                    'before_examples': before_sample,
+                    'after_examples': after_sample,
+                    'policy_section': issue['policy_section']
+                })
+        
+        return df_remediated
+    
+    def apply_null_token_conversion(self, df: pd.DataFrame, issues: List[Dict]) -> pd.DataFrame:
+        """Convert null tokens to proper NULL values per policy"""
+        df_remediated = df.copy()
+        
+        null_tokens = set(
+            self.policy.get('null_handling', {}).get('null_tokens_case_insensitive', [])
+        )
+        null_tokens = {token.lower() for token in null_tokens}
+        
+        for issue in issues:
+            if issue['issue_type'] == 'null_tokens_detected':
+                col = issue['column']
+                before_sample = issue.get('examples', [])
+                
+                # Convert null tokens to NaN
+                df_remediated[col] = df_remediated[col].apply(
+                    lambda x: np.nan if (isinstance(x, str) and x.strip().lower() in null_tokens) else x
+                )
+                
+                self.remediation_log.append({
+                    'column': col,
+                    'action': 'convert_null_tokens',
+                    'affected_count': issue['count'],
+                    'before_examples': before_sample,
+                    'after_examples': ['NULL'] * min(len(before_sample), 3),
+                    'policy_section': issue['policy_section']
+                })
+        
+        return df_remediated
+    
+    def apply_type_coercion(self, df: pd.DataFrame, issues: List[Dict]) -> pd.DataFrame:
+        """Apply safe type coercions per policy"""
+        df_remediated = df.copy()
+        
+        for issue in issues:
+            if issue['issue_type'] == 'type_coercion_available':
+                col = issue['column']
+                before_dtype = df[col].dtype
+                before_sample = df[col].dropna().head(3).tolist()
+                
+                # Apply numeric coercion
+                df_remediated[col] = pd.to_numeric(df_remediated[col], errors='coerce')
+                
+                after_sample = df_remediated[col].dropna().head(3).tolist()
+                
+                self.remediation_log.append({
+                    'column': col,
+                    'action': 'cast_to_numeric',
+                    'affected_count': issue['count'],
+                    'before_dtype': str(before_dtype),
+                    'after_dtype': str(df_remediated[col].dtype),
+                    'before_examples': before_sample,
+                    'after_examples': after_sample,
+                    'policy_section': issue['policy_section']
+                })
+            
+            elif issue['issue_type'] == 'timestamp_wrong_type':
+                col = issue['column']
+                before_dtype = df[col].dtype
+                
+                # Try to convert to datetime
+                # Handle Excel serial dates (float)
+                if pd.api.types.is_numeric_dtype(df[col].dtype):
+                    df_remediated[col] = pd.to_datetime(df_remediated[col], unit='D', origin='1899-12-30', errors='coerce')
+                else:
+                    df_remediated[col] = pd.to_datetime(df_remediated[col], errors='coerce')
+                
+                self.remediation_log.append({
+                    'column': col,
+                    'action': 'convert_to_datetime',
+                    'affected_count': issue['count'],
+                    'before_dtype': str(before_dtype),
+                    'after_dtype': str(df_remediated[col].dtype),
+                    'policy_section': issue['policy_section']
+                })
+        
+        return df_remediated
+    
+    def apply_pii_masking(self, df: pd.DataFrame, issues: List[Dict]) -> pd.DataFrame:
+        """Mask PII per policy"""
+        df_remediated = df.copy()
+        
+        for issue in issues:
+            if issue['issue_type'] == 'unmasked_pii':
+                col = issue['column']
+                method = issue['action']
+                before_sample = df[col].dropna().head(3).tolist()
+                
+                if method == 'hash':
+                    # Hash the PII values
+                    df_remediated[col] = df_remediated[col].apply(
+                        lambda x: hashlib.sha256(str(x).encode()).hexdigest()[:16] if pd.notna(x) else x
+                    )
+                elif method == 'drop':
+                    # Remove the column
+                    df_remediated = df_remediated.drop(columns=[col])
+                
+                after_sample = df_remediated[col].dropna().head(3).tolist() if method != 'drop' else ['DROPPED']
+                
+                self.remediation_log.append({
+                    'column': col,
+                    'action': f'mask_pii_{method}',
+                    'affected_count': issue['count'],
+                    'before_examples': before_sample,
+                    'after_examples': after_sample,
+                    'policy_section': issue['policy_section'],
+                    'pii_types': issue.get('pii_types', [])
+                })
+        
+        return df_remediated
+    
+    def apply_casing_normalization(self, df: pd.DataFrame, issues: List[Dict]) -> pd.DataFrame:
+        """Apply casing normalization per policy"""
+        df_remediated = df.copy()
+        
+        for issue in issues:
+            if issue['issue_type'] == 'casing_inconsistency':
+                col = issue['column']
+                action = issue['action']
+                before_sample = df[col].dropna().head(3).tolist()
+                
+                if 'titlecase' in action:
+                    df_remediated[col] = df_remediated[col].apply(
+                        lambda x: x.title() if isinstance(x, str) else x
+                    )
+                elif 'lowercase' in action:
+                    df_remediated[col] = df_remediated[col].apply(
+                        lambda x: x.lower() if isinstance(x, str) else x
+                    )
+                elif 'uppercase' in action:
+                    df_remediated[col] = df_remediated[col].apply(
+                        lambda x: x.upper() if isinstance(x, str) else x
+                    )
+                
+                after_sample = df_remediated[col].dropna().head(3).tolist()
+                
+                self.remediation_log.append({
+                    'column': col,
+                    'action': action,
+                    'affected_count': issue['count'],
+                    'before_examples': before_sample,
+                    'after_examples': after_sample,
+                    'policy_section': issue['policy_section']
+                })
+        
+        return df_remediated
+    
+    def remediate_dataframe(self, df: pd.DataFrame, profile: Dict) -> Tuple[pd.DataFrame, List[Dict]]:
+        """
+        Apply all programmatic fixes to dataframe based on profile
+        Returns: (remediated_df, human_review_issues)
+        """
+        df_remediated = df.copy()
+        human_review_issues = []
+        
+        # Extract all issues from profile
+        all_issues = []
+        for entity in profile.get('entities', []):
+            for col in entity.get('columns', []):
+                all_issues.extend(col.get('policy_issues', []))
+        
+        # Separate programmatic vs human issues
+        programmatic_issues = [i for i in all_issues if i.get('owner') == 'programmatic']
+        human_review_issues = [i for i in all_issues if i.get('owner') == 'human']
+        
+        # Apply fixes in order per policy
+        # 1. Trim whitespace (must be first to clean data)
+        df_remediated = self.apply_trim_whitespace(df_remediated, programmatic_issues)
+        
+        # 2. Convert null tokens
+        df_remediated = self.apply_null_token_conversion(df_remediated, programmatic_issues)
+        
+        # 3. Type coercion
+        df_remediated = self.apply_type_coercion(df_remediated, programmatic_issues)
+        
+        # 4. PII masking
+        df_remediated = self.apply_pii_masking(df_remediated, programmatic_issues)
+        
+        # 5. Casing normalization
+        df_remediated = self.apply_casing_normalization(df_remediated, programmatic_issues)
+        
+        return df_remediated, human_review_issues
+    
+    def generate_remediation_summary(self, original_df: pd.DataFrame, 
+                                    remediated_df: pd.DataFrame,
+                                    human_review_issues: List[Dict]) -> Dict:
+        """Generate summary of remediation actions"""
+        return {
+            'timestamp_utc': self.timestamp,
+            'policy_version': self.policy.get('policy_spec_version', 'unknown'),
+            'original_shape': original_df.shape,
+            'remediated_shape': remediated_df.shape,
+            'actions_applied': len(self.remediation_log),
+            'remediation_log': self.remediation_log,
+            'human_review_required': {
+                'count': len(human_review_issues),
+                'issues': human_review_issues
+            },
+            'governance': {
+                'audit_enabled': self.policy.get('governance', {}).get('audit', {}).get('enabled', True),
+                'principles_applied': list(self.policy.get('governance', {}).get('principles', []))
+            }
+        }
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description='Apply programmatic DQ fixes based on policy-driven profile'
+    )
+    parser.add_argument('input_file', help='Original data file (CSV or Excel)')
+    parser.add_argument('profile_file', help='Profile JSON from data_profiler_v2.py')
+    parser.add_argument('-p', '--policy', default='config/dq_policy_spec.yaml',
+                       help='Path to DQ Policy Spec YAML')
+    parser.add_argument('-o', '--output-dir', default='output',
+                       help='Output directory for remediated files')
+    
+    args = parser.parse_args()
+    
+    # Create output directory
+    output_dir = Path(args.output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Create timestamped subdirectory
+    timestamp = datetime.utcnow().strftime('%Y-%m-%d_%H-%M-%S')
+    run_dir = output_dir / timestamp
+    run_dir.mkdir(parents=True, exist_ok=True)
+    
+    print(f"Reading data from {args.input_file}...")
+    
+    # Read original data
+    file_path = Path(args.input_file)
+    if file_path.suffix.lower() == '.csv':
+        df_original = pd.read_csv(file_path)
+    else:
+        df_original = pd.read_excel(file_path)
+    
+    # Read profile
+    print(f"Reading profile from {args.profile_file}...")
+    with open(args.profile_file, 'r') as f:
+        profile = json.load(f)
+    
+    # Create remediation engine
+    engine = RemediationEngine(policy_path=args.policy)
+    
+    print(f"\nApplying programmatic fixes...")
+    df_remediated, human_review_issues = engine.remediate_dataframe(df_original, profile)
+    
+    # Generate summary
+    summary = engine.generate_remediation_summary(df_original, df_remediated, human_review_issues)
+    
+    # Save outputs
+    original_output = run_dir / f"original_{file_path.name}"
+    remediated_output = run_dir / f"remediated_{file_path.name}"
+    summary_output = run_dir / "remediation_summary.json"
+    
+    print(f"\nSaving outputs to {run_dir}...")
+    
+    # Save original (for reference)
+    if file_path.suffix.lower() == '.csv':
+        df_original.to_csv(original_output, index=False)
+        df_remediated.to_csv(remediated_output, index=False)
+    else:
+        df_original.to_excel(original_output, index=False)
+        df_remediated.to_excel(remediated_output, index=False)
+    
+    # Save summary
+    with open(summary_output, 'w') as f:
+        json.dump(summary, f, indent=2)
+    
+    print(f"✓ Original saved: {original_output}")
+    print(f"✓ Remediated saved: {remediated_output}")
+    print(f"✓ Summary saved: {summary_output}")
+    
+    print(f"\n{'='*60}")
+    print("REMEDIATION SUMMARY")
+    print(f"{'='*60}")
+    print(f"Actions applied: {summary['actions_applied']}")
+    print(f"Human review required: {summary['human_review_required']['count']}")
+    
+    if summary['remediation_log']:
+        print(f"\nActions taken:")
+        for log_entry in summary['remediation_log']:
+            print(f"  • {log_entry['column']}: {log_entry['action']} ({log_entry['affected_count']} values)")
+    
+    if human_review_issues:
+        print(f"\n⚠ Issues requiring human review:")
+        for issue in human_review_issues[:10]:  # Show first 10
+            print(f"  • {issue['column']}: {issue['issue_type']} ({issue['severity']})")
+        if len(human_review_issues) > 10:
+            print(f"  ... and {len(human_review_issues) - 10} more (see summary file)")
+    
+    print(f"\n{'='*60}")
+
+
+if __name__ == '__main__':
+    main()
