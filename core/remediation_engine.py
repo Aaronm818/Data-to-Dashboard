@@ -166,8 +166,12 @@ class RemediationEngine:
                 affected_count = 0
 
                 if method == 'hash':
-                    # For email PII, only hash values that actually look like emails (contain @)
-                    if 'email' in pii_types:
+                    # Determine if this is an email column (by pii_types OR column name)
+                    col_lower = col.lower()
+                    is_email_column = 'email' in pii_types or 'email' in col_lower
+
+                    if is_email_column:
+                        # For email columns, only hash values that actually look like emails (contain @)
                         def hash_if_email(x):
                             if pd.notna(x) and isinstance(x, str) and '@' in x:
                                 return hashlib.sha256(x.encode()).hexdigest()[:16]
@@ -237,7 +241,45 @@ class RemediationEngine:
                 })
         
         return df_remediated
-    
+
+    def apply_global_email_masking(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Safety net: Scan ALL columns for any values containing @ and mask them.
+        This catches email addresses in unexpected columns (e.g., free text, comments).
+        """
+        df_remediated = df.copy()
+
+        for col in df_remediated.columns:
+            # Only process string/object columns (check for object, string, or StringDtype)
+            col_dtype = str(df_remediated[col].dtype)
+            if col_dtype == 'object' or col_dtype == 'string' or 'str' in col_dtype.lower():
+                # Find values containing @
+                mask = df_remediated[col].apply(
+                    lambda x: isinstance(x, str) and '@' in x
+                )
+
+                if mask.any():
+                    before_sample = df_remediated.loc[mask, col].head(3).tolist()
+                    affected_count = mask.sum()
+
+                    # Hash values containing @
+                    df_remediated.loc[mask, col] = df_remediated.loc[mask, col].apply(
+                        lambda x: hashlib.sha256(x.encode()).hexdigest()[:16]
+                    )
+
+                    after_sample = df_remediated.loc[mask, col].head(3).tolist()
+
+                    self.remediation_log.append({
+                        'column': col,
+                        'action': 'global_email_mask',
+                        'affected_count': int(affected_count),
+                        'before_examples': before_sample,
+                        'after_examples': after_sample,
+                        'policy_section': 'pii_handling.global_scan'
+                    })
+
+        return df_remediated
+
     def remediate_dataframe(self, df: pd.DataFrame, profile: Dict) -> Tuple[pd.DataFrame, List[Dict]]:
         """
         Apply all programmatic fixes to dataframe based on profile
@@ -271,7 +313,10 @@ class RemediationEngine:
         
         # 5. Casing normalization
         df_remediated = self.apply_casing_normalization(df_remediated, programmatic_issues)
-        
+
+        # 6. Global email masking (safety net for emails in any column)
+        df_remediated = self.apply_global_email_masking(df_remediated)
+
         return df_remediated, human_review_issues
     
     def generate_remediation_summary(self, original_df: pd.DataFrame, 
