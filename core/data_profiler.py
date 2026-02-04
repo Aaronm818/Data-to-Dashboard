@@ -179,7 +179,7 @@ class PolicyEngine:
 class DataProfiler:
     """Policy-driven data profiler with dynamic behavior"""
     
-    def __init__(self, file_path, policy_path='config/dq_policy_spec.yaml', 
+    def __init__(self, file_path, policy_path='../config/dq_policy_spec.yaml', 
                  sample_size=None, max_distinct_values=100, top_k=10, histogram_bins=10):
         self.file_path = Path(file_path)
         self.sample_size = sample_size

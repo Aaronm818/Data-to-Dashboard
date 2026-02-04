@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Data Profile: <span class="text-primary">{{ filename }}</span></h2>
+    <form action="/remediate" method="post">
+        <input type="hidden" name="filename" value="{{ filename }}">
+        <input type="hidden" name="profile_filename" value="{{ profile_filename }}">
+        <button type="submit" class="btn btn-success">Apply Remediation</button>
+    </form>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card p-3 text-center">
+            <div class="display-4">{{ profile.issues_summary.total_issues }}</div>
+            <div class="text-muted">Total Issues</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card p-3 text-center text-danger">
+            <div class="display-4">{{ profile.issues_summary.by_severity.error }}</div>
+            <div class="text-muted">Errors</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card p-3 text-center text-warning">
+            <div class="display-4">{{ profile.issues_summary.by_severity.warn }}</div>
+            <div class="text-muted">Warnings</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card p-3 text-center">
+            <div class="display-4 text-primary">{{ profile.issues_summary.by_owner.programmatic }}</div>
+            <div class="text-muted">Fixable by Policy</div>
+        </div>
+    </div>
+</div>
+
+<h3>Column Analysis</h3>
+{% for entity in profile.entities %}
+<div class="card">
+    <div class="card-header">{{ entity.entity_name }} ({{ entity.row_summary.row_count }} rows)</div>
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Column</th>
+                    <th>Role</th>
+                    <th>Type</th>
+                    <th>Nulls</th>
+                    <th>Issues</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for col in entity.columns %}
+                <tr>
+                    <td class="fw-bold">{{ col.column_name }}</td>
+                    <td><span class="badge bg-secondary">{{ col.role }}</span></td>
+                    <td><small>{{ col.logical_type }}</small></td>
+                    <td>
+                        {{ col.statistics.completeness.null_rate * 100 }}%
+                        {% if col.statistics.completeness.null_rate > 0 %}
+                        <span class="text-muted">({{ col.statistics.completeness.null_count }})</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% for issue in col.policy_issues %}
+                        <div class="mb-1">
+                            <span
+                                class="badge {% if issue.severity == 'error' %}bg-danger{% elif issue.severity == 'warn' %}bg-warning text-dark{% else %}bg-info text-dark{% endif %}">
+                                {{ issue.issue_type }}
+                            </span>
+                        </div>
+                        {% endfor %}
+                        {% if not col.policy_issues %}<span class="text-success">✓</span>{% endif %}
+                    </td>
+                    <td>
+                        {% for issue in col.policy_issues %}
+                        <div class="mb-1 small">
+                            {% if issue.owner == 'programmatic' %}
+                            <span class="badge badge-programmatic">Auto: {{ issue.action }}</span>
+                            {% else %}
+                            <span class="badge badge-human">Review: {{ issue.action }}</span>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endfor %}
+
+{% endblock %}

@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="text-center mb-5">
+    <div class="display-1 text-success mb-3">✓</div>
+    <h1>Remediation Complete</h1>
+    <p class="lead">Programmatic fixes have been applied according to the Data Quality Policy.</p>
+
+    <div class="d-flex justify-content-center gap-3 mt-4">
+        <a href="/download/{{ output_dir }}/{{ remediated_file }}" class="btn btn-primary btn-lg">
+            Download Remediated Data
+        </a>
+        <a href="/download/{{ output_dir }}/summary.json" class="btn btn-outline-secondary btn-lg">
+            Download Audit Log
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">Actions Applied</div>
+            <div class="card-body">
+                {% if summary.remediation_log %}
+                <ul class="list-group list-group-flush">
+                    {% for item in summary.remediation_log %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>{{ item.column }}</strong>: {{ item.action }}
+                            <div class="small text-muted">Section: {{ item.policy_section }}</div>
+                        </div>
+                        <span class="badge bg-light text-dark rounded-pill">{{ item.affected_count }} rows</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-muted text-center p-3">No programmatic issues found.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card border-warning">
+            <div class="card-header bg-warning text-dark">Human Review Required</div>
+            <div class="card-body">
+                {% if summary.human_review_required.count > 0 %}
+                <div class="alert alert-warning">
+                    <strong>{{ summary.human_review_required.count }} issues</strong> require manual attention.
+                </div>
+                <ul class="list-group list-group-flush">
+                    {% for issue in summary.human_review_required.issues %}
+                    <li class="list-group-item">
+                        <strong class="text-danger">{{ issue.issue_type }}</strong> on <strong>{{ issue.column
+                            }}</strong>
+                        <div class="small">{{ issue.action }}</div>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-success text-center p-3">No human review items pending!</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="text-center mt-5">
+    <a href="/" class="btn btn-link">← Profile Another File</a>
+</div>
+{% endblock %}

@@ -19,7 +19,7 @@ import argparse
 class RemediationEngine:
     """Applies programmatic data quality fixes per policy"""
     
-    def __init__(self, policy_path: str = 'config/dq_policy_spec.yaml'):
+    def __init__(self, policy_path: str = '../config/dq_policy_spec.yaml'):
         self.policy_path = Path(policy_path)
         with open(policy_path, 'r') as f:
             self.policy = yaml.safe_load(f)
