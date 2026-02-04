@@ -57,20 +57,41 @@ class RemediationEngine:
     def apply_null_token_conversion(self, df: pd.DataFrame, issues: List[Dict]) -> pd.DataFrame:
         """Convert null tokens to proper NULL values per policy"""
         df_remediated = df.copy()
-        
+
         null_tokens = set(
             self.policy.get('null_handling', {}).get('null_tokens_case_insensitive', [])
         )
         null_tokens = {token.lower() for token in null_tokens}
-        
+
+        # Also get whitespace tokens per policy (includes empty string "")
+        whitespace_tokens = set(
+            self.policy.get('null_handling', {}).get('whitespace_tokens', [])
+        )
+
+        def is_null_value(x):
+            """Check if value should be converted to NULL per policy"""
+            if not isinstance(x, str):
+                return False
+            # Check if value is a whitespace token (before stripping)
+            if x in whitespace_tokens:
+                return True
+            stripped = x.strip()
+            # Check if stripped value is empty or a whitespace token
+            if stripped == '' or stripped in whitespace_tokens:
+                return True
+            # Check if stripped value is a null token (case insensitive)
+            if stripped.lower() in null_tokens:
+                return True
+            return False
+
         for issue in issues:
             if issue['issue_type'] == 'null_tokens_detected':
                 col = issue['column']
                 before_sample = issue.get('examples', [])
-                
-                # Convert null tokens to NaN
+
+                # Convert null tokens and whitespace tokens to NaN
                 df_remediated[col] = df_remediated[col].apply(
-                    lambda x: np.nan if (isinstance(x, str) and x.strip().lower() in null_tokens) else x
+                    lambda x: np.nan if is_null_value(x) else x
                 )
                 
                 self.remediation_log.append({
@@ -135,32 +156,48 @@ class RemediationEngine:
     def apply_pii_masking(self, df: pd.DataFrame, issues: List[Dict]) -> pd.DataFrame:
         """Mask PII per policy"""
         df_remediated = df.copy()
-        
+
         for issue in issues:
             if issue['issue_type'] == 'unmasked_pii':
                 col = issue['column']
                 method = issue['action']
+                pii_types = issue.get('pii_types', [])
                 before_sample = df[col].dropna().head(3).tolist()
-                
+                affected_count = 0
+
                 if method == 'hash':
-                    # Hash the PII values
-                    df_remediated[col] = df_remediated[col].apply(
-                        lambda x: hashlib.sha256(str(x).encode()).hexdigest()[:16] if pd.notna(x) else x
-                    )
+                    # For email PII, only hash values that actually look like emails (contain @)
+                    if 'email' in pii_types:
+                        def hash_if_email(x):
+                            if pd.notna(x) and isinstance(x, str) and '@' in x:
+                                return hashlib.sha256(x.encode()).hexdigest()[:16]
+                            return x
+                        df_remediated[col] = df_remediated[col].apply(hash_if_email)
+                        # Count how many were actually hashed
+                        affected_count = df[col].apply(
+                            lambda x: pd.notna(x) and isinstance(x, str) and '@' in x
+                        ).sum()
+                    else:
+                        # For other PII types, hash all non-null values
+                        df_remediated[col] = df_remediated[col].apply(
+                            lambda x: hashlib.sha256(str(x).encode()).hexdigest()[:16] if pd.notna(x) else x
+                        )
+                        affected_count = df[col].notna().sum()
                 elif method == 'drop':
                     # Remove the column
                     df_remediated = df_remediated.drop(columns=[col])
-                
+                    affected_count = issue['count']
+
                 after_sample = df_remediated[col].dropna().head(3).tolist() if method != 'drop' else ['DROPPED']
-                
+
                 self.remediation_log.append({
                     'column': col,
                     'action': f'mask_pii_{method}',
-                    'affected_count': issue['count'],
+                    'affected_count': int(affected_count),
                     'before_examples': before_sample,
                     'after_examples': after_sample,
                     'policy_section': issue['policy_section'],
-                    'pii_types': issue.get('pii_types', [])
+                    'pii_types': pii_types
                 })
         
         return df_remediated
