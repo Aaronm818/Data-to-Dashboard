@@ -1,0 +1,1646 @@
+{
+  "profile_version": "2.0.0",
+  "policy_version": "0.1.0",
+  "policy_name": "AI-Ready Data Quality Remediation Policy",
+  "run": {
+    "run_id": "run_84d9b6b2",
+    "timestamp_utc": "2026-02-04T19:30:08.642250Z",
+    "engine": {
+      "name": "PolicyDrivenDataProfiler",
+      "version": "2.0.0",
+      "policy_path": "config/dq_policy_spec.yaml"
+    }
+  },
+  "dataset": {
+    "dataset_id": "dataset_552858a3",
+    "dataset_name": "Anon Customer Metrics"
+  },
+  "sources": [
+    {
+      "source_id": "source_950b0da2",
+      "source_type": "excel",
+      "source_name": "Anon Customer Metrics.xlsx",
+      "connection_or_path": "/home/markwhinderliter/Documents/D2I/input/Anon Customer Metrics.xlsx",
+      "ingested_at_utc": "2026-02-04T19:30:08.642250Z"
+    }
+  ],
+  "entities": [
+    {
+      "entity_id": "entity_0c6b7a52",
+      "entity_name": "Sheet1",
+      "entity_type": "table",
+      "source_id": "source_950b0da2",
+      "row_summary": {
+        "row_count": 9331,
+        "sampled_rows": 9331
+      },
+      "columns": [
+        {
+          "column_name": "Anon Account",
+          "column_id": "col_5862a034",
+          "ordinal_position": 1,
+          "logical_type": "str",
+          "role": "dimension",
+          "criticality": "medium",
+          "statistics": {
+            "sample_size": 9331,
+            "completeness": {
+              "null_count": 142,
+              "null_rate": 0.0152
+            },
+            "cardinality": {
+              "distinct_count": 192,
+              "distinct_rate": 0.0206
+            }
+          },
+          "policy_issues": [
+            {
+              "column": "Anon Account",
+              "issue_type": "null_tokens_detected",
+              "severity": "warn",
+              "count": 142,
+              "policy_section": "null_handling.null_tokens_case_insensitive",
+              "owner": "programmatic",
+              "action": "convert_to_proper_null",
+              "examples": []
+            }
+          ],
+          "programmatic_fixes_available": 1,
+          "human_review_required": 0
+        },
+        {
+          "column_name": "Anon Client",
+          "column_id": "col_b4014441",
+          "ordinal_position": 2,
+          "logical_type": "str",
+          "role": "dimension",
+          "criticality": "medium",
+          "statistics": {
+            "sample_size": 9331,
+            "completeness": {
+              "null_count": 984,
+              "null_rate": 0.1055
+            },
+            "cardinality": {
+              "distinct_count": 179,
+              "distinct_rate": 0.0192
+            }
+          },
+          "policy_issues": [
+            {
+              "column": "Anon Client",
+              "issue_type": "null_tokens_detected",
+              "severity": "warn",
+              "count": 984,
+              "policy_section": "null_handling.null_tokens_case_insensitive",
+              "owner": "programmatic",
+              "action": "convert_to_proper_null",
+              "examples": []
+            }
+          ],
+          "programmatic_fixes_available": 1,
+          "human_review_required": 0
+        },
+        {
+          "column_name": "Anon VP",
+          "column_id": "col_c4160521",
+          "ordinal_position": 3,
+          "logical_type": "str",
+          "role": "dimension",
+          "criticality": "medium",
+          "statistics": {
+            "sample_size": 9331,
+            "completeness": {
+              "null_count": 887,
+              "null_rate": 0.0951
+            },
+            "cardinality": {
+              "distinct_count": 9,
+              "distinct_rate": 0.001
+            }
+          },
+          "policy_issues": [
+            {
+              "column": "Anon VP",
+              "issue_type": "null_tokens_detected",
+              "severity": "warn",
+              "count": 924,
+              "policy_section": "null_handling.null_tokens_case_insensitive",
+              "owner": "programmatic",
+              "action": "convert_to_proper_null",
+              "examples": [
+                "-"
+              ]
+            }
+          ],
+          "programmatic_fixes_available": 1,
+          "human_review_required": 0
+        },
+        {
+          "column_name": "Anon Sr Director",
+          "column_id": "col_076b0f4c",
+          "ordinal_position": 4,
+          "logical_type": "str",
+          "role": "dimension",
+          "criticality": "medium",
+          "statistics": {
+            "sample_size": 9331,
+            "completeness": {
+              "null_count": 6352,
+              "null_rate": 0.6807
+            },
+            "cardinality": {
+              "distinct_count": 14,
+              "distinct_rate": 0.0015
+            }
+          },
+          "policy_issues": [
+            {
+              "column": "Anon Sr Director",
+              "issue_type": "null_tokens_detected",
+              "severity": "warn",
+              "count": 7204,
+              "policy_section": "null_handling.null_tokens_case_insensitive",
+              "owner": "programmatic",
+              "action": "convert_to_proper_null",
+              "examples": [
+                " "
+              ]
+            }
+          ],
+          "programmatic_fixes_available": 1,
+          "human_review_required": 0
+        },
+        {
+          "column_name": "Program",
+          "column_id": "col_b5fbd74f",
+          "ordinal_position": 5,
+          "logical_type": "str",
+          "role": "dimension",
+          "criticality": "medium",
+          "statistics": {
+            "sample_size": 9331,
+            "completeness": {
+              "null_count": 7309,
+              "null_rate": 0.7833
+            },
+            "cardinality": {
+              "distinct_count": 39,
+              "distinct_rate": 0.0042
+            }
+          },
+          "policy_issues": [
+            {
+              "column": "Program",
+              "issue_type": "null_tokens_detected",
+              "severity": "warn",
+              "count": 8192,
+              "policy_section": "null_handling.null_tokens_case_insensitive",
+              "owner": "programmatic",
+              "action": "convert_to_proper_null",
+              "examples": [
+                " "
+              ]
+            }
+          ],
+          "programmatic_fixes_available": 1,
+          "human_review_required": 0
+        },
+        {
+          "column_name": "LOB",
+          "column_id": "col_315cd61c",
+          "ordinal_position": 6,
+          "logical_type": "str",
+          "role": "dimension",
+          "criticality": "medium",
+          "statistics": {
+            "sample_size": 9331,
+            "completeness": {
+              "null_count": 117,
+              "null_rate": 0.0125
+            },
+            "cardinality": {
+              "distinct_count": 951,
+              "distinct_rate": 0.1019
+            }
+          },
+          "policy_issues": [
+            {
+              "column": "LOB",
+              "issue_type": "null_tokens_detected",
+              "severity": "warn",
+              "count": 117,
+              "policy_section": "null_handling.null_tokens_case_insensitive",
+              "owner": "programmatic",
+              "action": "convert_to_proper_null",
+              "examples": []
+            }
+          ],
+          "programmatic_fixes_available": 1,
+          "human_review_required": 0
+        },
+        {
+          "column_name": "HG",
+          "column_id": "col_b6fdb338",
+          "ordinal_position": 7,
+          "logical_type": "str",
+          "role": "dimension",
+          "criticality": "medium",
+          "statistics": {
+            "sample_size": 9331,
+            "completeness": {
+              "null_count": 150,
+              "null_rate": 0.0161
+            },
+            "cardinality": {
+              "distinct_count": 1538,
+              "distinct_rate": 0.1648
+            }
+          },
+          "policy_issues": [
+            {
+              "column": "HG",
+              "issue_type": "null_tokens_detected",
+              "severity": "warn",
+              "count": 150,
+              "policy_section": "null_handling.null_tokens_case_insensitive",
+              "owner": "programmatic",
+              "action": "convert_to_proper_null",
+              "examples": []
+            }
+          ],
+          "programmatic_fixes_available": 1,
+          "human_review_required": 0
+        },
+        {
+          "column_name": "KPI Standard Type",
+          "column_id": "col_2c70d523",
+          "ordinal_position": 8,
+          "logical_type": "str",
+          "role": "dimension",
+          "criticality": "medium",
+          "statistics": {
+            "sample_size": 9331,
+            "completeness": {
+              "null_count": 1070,
+              "null_rate": 0.1147
+            },
+            "cardinality": {
+              "distinct_count": 7,
+              "distinct_rate": 0.0008
+            }
+          },
+          "policy_issues": [
+            {
+              "column": "KPI Standard Type",
+              "issue_type": "null_tokens_detected",
+              "severity": "warn",
+              "count": 1106,
+              "policy_section": "null_handling.null_tokens_case_insensitive",
+              "owner": "programmatic",
+              "action": "convert_to_proper_null",
+              "examples": [
+                " "
+              ]
+            }
+          ],
+          "programmatic_fixes_available": 1,
+          "human_review_required": 0
+        },
+        {
+          "column_name": "KPI Category",
+          "column_id": "col_7b347c42",
+          "ordinal_position": 9,
+          "logical_type": "str",
+          "role": "dimension",
+          "criticality": "medium",
+          "statistics": {
+            "sample_size": 9331,
+            "completeness": {
+              "null_count": 6407,
+              "null_rate": 0.6866
+            },
+            "cardinality": {
+              "distinct_count": 149,
+              "distinct_rate": 0.016
+            }
+          },
+          "policy_issues": [
+            {
+              "column": "KPI Category",
+              "issue_type": "null_tokens_detected",
+              "severity": "warn",
+              "count": 7593,
+              "policy_section": "null_handling.null_tokens_case_insensitive",
+              "owner": "programmatic",
+              "action": "convert_to_proper_null",
+              "examples": [
+                " "
+              ]
+            }
+          ],
+          "programmatic_fixes_available": 1,
+          "human_review_required": 0
+        },
+        {
+          "column_name": "KPI Name",
+          "column_id": "col_c2f99d35",
+          "ordinal_position": 10,
+          "logical_type": "str",
+          "role": "dimension",
+          "criticality": "medium",
+          "statistics": {
+            "sample_size": 9331,
+            "completeness": {
+              "null_count": 69,
+              "null_rate": 0.0074
+            },
+            "cardinality": {
+              "distinct_count": 2370,
+              "distinct_rate": 0.254
+            }
+          },
+          "policy_issues": [
+            {
+              "column": "KPI Name",
+              "issue_type": "null_tokens_detected",
+              "severity": "warn",
+              "count": 69,
+              "policy_section": "null_handling.null_tokens_case_insensitive",
+              "owner": "programmatic",
+              "action": "convert_to_proper_null",
+              "examples": []
+            }
+          ],
+          "programmatic_fixes_available": 1,
+          "human_review_required": 0
+        },
+        {
+          "column_name": "KPI Format",
+          "column_id": "col_c21d8a25",
+          "ordinal_position": 11,
+          "logical_type": "str",
+          "role": "dimension",
+          "criticality": "medium",
+          "statistics": {
+            "sample_size": 9331,
+            "completeness": {
+              "null_count": 1144,
+              "null_rate": 0.1226
+            },
+            "cardinality": {
+              "distinct_count": 21,
+              "distinct_rate": 0.0023
+            }
+          },
+          "policy_issues": [
+            {
+              "column": "KPI Format",
+              "issue_type": "null_tokens_detected",
+              "severity": "warn",
+              "count": 1221,
+              "policy_section": "null_handling.null_tokens_case_insensitive",
+              "owner": "programmatic",
+              "action": "convert_to_proper_null",
+              "examples": [
+                " "
+              ]
+            }
+          ],
+          "programmatic_fixes_available": 1,
+          "human_review_required": 0
+        },
+        {
+          "column_name": "Numerator",
+          "column_id": "col_c4aadbba",
+          "ordinal_position": 12,
+          "logical_type": "str",
+          "role": "dimension",
+          "criticality": "medium",
+          "statistics": {
+            "sample_size": 9331,
+            "completeness": {
+              "null_count": 1314,
+              "null_rate": 0.1408
+            },
+            "cardinality": {
+              "distinct_count": 1982,
+              "distinct_rate": 0.2124
+            }
+          },
+          "policy_issues": [
+            {
+              "column": "Numerator",
+              "issue_type": "null_tokens_detected",
+              "severity": "warn",
+              "count": 1665,
+              "policy_section": "null_handling.null_tokens_case_insensitive",
+              "owner": "programmatic",
+              "action": "convert_to_proper_null",
+              "examples": [
+                " ",
+                "na",
+                "-"
+              ]
+            }
+          ],
+          "programmatic_fixes_available": 1,
+          "human_review_required": 0
+        },
+        {
+          "column_name": "Denominator",
+          "column_id": "col_ba4c001a",
+          "ordinal_position": 13,
+          "logical_type": "str",
+          "role": "dimension",
+          "criticality": "medium",
+          "statistics": {
+            "sample_size": 9331,
+            "completeness": {
+              "null_count": 2073,
+              "null_rate": 0.2222
+            },
+            "cardinality": {
+              "distinct_count": 1177,
+              "distinct_rate": 0.1261
+            }
+          },
+          "policy_issues": [
+            {
+              "column": "Denominator",
+              "issue_type": "null_tokens_detected",
+              "severity": "warn",
+              "count": 2672,
+              "policy_section": "null_handling.null_tokens_case_insensitive",
+              "owner": "programmatic",
+              "action": "convert_to_proper_null",
+              "examples": [
+                " ",
+                "-",
+                "none",
+                "na",
+                "Na"
+              ]
+            }
+          ],
+          "programmatic_fixes_available": 1,
+          "human_review_required": 0
+        },
+        {
+          "column_name": "STAR",
+          "column_id": "col_e714d9c5",
+          "ordinal_position": 14,
+          "logical_type": "str",
+          "role": "dimension",
+          "criticality": "medium",
+          "statistics": {
+            "sample_size": 9331,
+            "completeness": {
+              "null_count": 81,
+              "null_rate": 0.0087
+            },
+            "cardinality": {
+              "distinct_count": 2,
+              "distinct_rate": 0.0002
+            }
+          },
+          "policy_issues": [
+            {
+              "column": "STAR",
+              "issue_type": "null_tokens_detected",
+              "severity": "warn",
+              "count": 81,
+              "policy_section": "null_handling.null_tokens_case_insensitive",
+              "owner": "programmatic",
+              "action": "convert_to_proper_null",
+              "examples": []
+            }
+          ],
+          "programmatic_fixes_available": 1,
+          "human_review_required": 0
+        },
+        {
+          "column_name": "CVA",
+          "column_id": "col_ce514cf7",
+          "ordinal_position": 15,
+          "logical_type": "str",
+          "role": "dimension",
+          "criticality": "medium",
+          "statistics": {
+            "sample_size": 9331,
+            "completeness": {
+              "null_count": 428,
+              "null_rate": 0.0459
+            },
+            "cardinality": {
+              "distinct_count": 7,
+              "distinct_rate": 0.0008
+            }
+          },
+          "policy_issues": [
+            {
+              "column": "CVA",
+              "issue_type": "null_tokens_detected",
+              "severity": "warn",
+              "count": 482,
+              "policy_section": "null_handling.null_tokens_case_insensitive",
+              "owner": "programmatic",
+              "action": "convert_to_proper_null",
+              "examples": [
+                " "
+              ]
+            }
+          ],
+          "programmatic_fixes_available": 1,
+          "human_review_required": 0
+        },
+        {
+          "column_name": "KPI Data Provider",
+          "column_id": "col_7378e0bf",
+          "ordinal_position": 16,
+          "logical_type": "str",
+          "role": "identifier",
+          "criticality": "critical",
+          "statistics": {
+            "sample_size": 9331,
+            "completeness": {
+              "null_count": 1153,
+              "null_rate": 0.1236
+            },
+            "cardinality": {
+              "distinct_count": 10,
+              "distinct_rate": 0.0011
+            }
+          },
+          "policy_issues": [
+            {
+              "column": "KPI Data Provider",
+              "issue_type": "null_tokens_detected",
+              "severity": "warn",
+              "count": 1201,
+              "policy_section": "null_handling.null_tokens_case_insensitive",
+              "owner": "programmatic",
+              "action": "convert_to_proper_null",
+              "examples": [
+                " "
+              ]
+            },
+            {
+              "column": "KPI Data Provider",
+              "issue_type": "missing_required_field",
+              "severity": "error",
+              "count": 1153,
+              "policy_section": "constraints.required_fields (role=identifier)",
+              "owner": "human",
+              "action": "quarantine_row",
+              "criticality": "critical"
+            }
+          ],
+          "programmatic_fixes_available": 1,
+          "human_review_required": 1
+        },
+        {
+          "column_name": "Data Source Details",
+          "column_id": "col_1cb2ef90",
+          "ordinal_position": 17,
+          "logical_type": "str",
+          "role": "dimension",
+          "criticality": "medium",
+          "statistics": {
+            "sample_size": 9331,
+            "completeness": {
+              "null_count": 2683,
+              "null_rate": 0.2875
+            },
+            "cardinality": {
+              "distinct_count": 618,
+              "distinct_rate": 0.0662
+            }
+          },
+          "policy_issues": [
+            {
+              "column": "Data Source Details",
+              "issue_type": "null_tokens_detected",
+              "severity": "warn",
+              "count": 2775,
+              "policy_section": "null_handling.null_tokens_case_insensitive",
+              "owner": "programmatic",
+              "action": "convert_to_proper_null",
+              "examples": [
+                " ",
+                "\n"
+              ]
+            }
+          ],
+          "programmatic_fixes_available": 1,
+          "human_review_required": 0
+        },
+        {
+          "column_name": "Anon Developer Email",
+          "column_id": "col_409248a9",
+          "ordinal_position": 18,
+          "logical_type": "str",
+          "role": "identifier",
+          "criticality": "critical",
+          "statistics": {
+            "sample_size": 9331,
+            "completeness": {
+              "null_count": 3482,
+              "null_rate": 0.3732
+            },
+            "cardinality": {
+              "distinct_count": 148,
+              "distinct_rate": 0.0159
+            }
+          },
+          "policy_issues": [
+            {
+              "column": "Anon Developer Email",
+              "issue_type": "null_tokens_detected",
+              "severity": "warn",
+              "count": 3482,
+              "policy_section": "null_handling.null_tokens_case_insensitive",
+              "owner": "programmatic",
+              "action": "convert_to_proper_null",
+              "examples": []
+            },
+            {
+              "column": "Anon Developer Email",
+              "issue_type": "missing_required_field",
+              "severity": "error",
+              "count": 3482,
+              "policy_section": "constraints.required_fields (role=identifier)",
+              "owner": "human",
+              "action": "quarantine_row",
+              "criticality": "critical"
+            },
+            {
+              "column": "Anon Developer Email",
+              "issue_type": "unmasked_pii",
+              "severity": "warn",
+              "count": 5849,
+              "pii_types": [
+                "email"
+              ],
+              "policy_section": "pii_handling.masking.methods.email",
+              "owner": "programmatic",
+              "action": "hash",
+              "details": "5849 email addresses detected"
+            }
+          ],
+          "programmatic_fixes_available": 2,
+          "human_review_required": 1
+        },
+        {
+          "column_name": "Standard Format",
+          "column_id": "col_724054a8",
+          "ordinal_position": 19,
+          "logical_type": "str",
+          "role": "dimension",
+          "criticality": "medium",
+          "statistics": {
+            "sample_size": 9331,
+            "completeness": {
+              "null_count": 6814,
+              "null_rate": 0.7303
+            },
+            "cardinality": {
+              "distinct_count": 34,
+              "distinct_rate": 0.0036
+            }
+          },
+          "policy_issues": [
+            {
+              "column": "Standard Format",
+              "issue_type": "null_tokens_detected",
+              "severity": "warn",
+              "count": 8042,
+              "policy_section": "null_handling.null_tokens_case_insensitive",
+              "owner": "programmatic",
+              "action": "convert_to_proper_null",
+              "examples": [
+                " "
+              ]
+            }
+          ],
+          "programmatic_fixes_available": 1,
+          "human_review_required": 0
+        },
+        {
+          "column_name": "KPI Conversion Needed?",
+          "column_id": "col_499a769b",
+          "ordinal_position": 20,
+          "logical_type": "str",
+          "role": "dimension",
+          "criticality": "medium",
+          "statistics": {
+            "sample_size": 9331,
+            "completeness": {
+              "null_count": 6867,
+              "null_rate": 0.7359
+            },
+            "cardinality": {
+              "distinct_count": 24,
+              "distinct_rate": 0.0026
+            }
+          },
+          "policy_issues": [
+            {
+              "column": "KPI Conversion Needed?",
+              "issue_type": "null_tokens_detected",
+              "severity": "warn",
+              "count": 8132,
+              "policy_section": "null_handling.null_tokens_case_insensitive",
+              "owner": "programmatic",
+              "action": "convert_to_proper_null",
+              "examples": [
+                " ",
+                "none",
+                "NOne"
+              ]
+            }
+          ],
+          "programmatic_fixes_available": 1,
+          "human_review_required": 0
+        },
+        {
+          "column_name": "Computation Behavior",
+          "column_id": "col_18ed3a86",
+          "ordinal_position": 21,
+          "logical_type": "str",
+          "role": "dimension",
+          "criticality": "medium",
+          "statistics": {
+            "sample_size": 9331,
+            "completeness": {
+              "null_count": 994,
+              "null_rate": 0.1065
+            },
+            "cardinality": {
+              "distinct_count": 5,
+              "distinct_rate": 0.0005
+            }
+          },
+          "policy_issues": [
+            {
+              "column": "Computation Behavior",
+              "issue_type": "null_tokens_detected",
+              "severity": "warn",
+              "count": 994,
+              "policy_section": "null_handling.null_tokens_case_insensitive",
+              "owner": "programmatic",
+              "action": "convert_to_proper_null",
+              "examples": []
+            }
+          ],
+          "programmatic_fixes_available": 1,
+          "human_review_required": 0
+        },
+        {
+          "column_name": "Metric ID if in UDW",
+          "column_id": "col_f6c0e424",
+          "ordinal_position": 22,
+          "logical_type": "str",
+          "role": "identifier",
+          "criticality": "critical",
+          "statistics": {
+            "sample_size": 9331,
+            "completeness": {
+              "null_count": 7146,
+              "null_rate": 0.7658
+            },
+            "cardinality": {
+              "distinct_count": 135,
+              "distinct_rate": 0.0145
+            }
+          },
+          "policy_issues": [
+            {
+              "column": "Metric ID if in UDW",
+              "issue_type": "null_tokens_detected",
+              "severity": "warn",
+              "count": 7868,
+              "policy_section": "null_handling.null_tokens_case_insensitive",
+              "owner": "programmatic",
+              "action": "convert_to_proper_null",
+              "examples": [
+                " ",
+                "-"
+              ]
+            },
+            {
+              "column": "Metric ID if in UDW",
+              "issue_type": "missing_required_field",
+              "severity": "error",
+              "count": 7146,
+              "policy_section": "constraints.required_fields (role=identifier)",
+              "owner": "human",
+              "action": "quarantine_row",
+              "criticality": "critical"
+            }
+          ],
+          "programmatic_fixes_available": 1,
+          "human_review_required": 1
+        },
+        {
+          "column_name": "Challenges Encountered / Remarks",
+          "column_id": "col_ad98301c",
+          "ordinal_position": 23,
+          "logical_type": "str",
+          "role": "dimension",
+          "criticality": "medium",
+          "statistics": {
+            "sample_size": 9331,
+            "completeness": {
+              "null_count": 7062,
+              "null_rate": 0.7568
+            },
+            "cardinality": {
+              "distinct_count": 100,
+              "distinct_rate": 0.0107
+            }
+          },
+          "policy_issues": [
+            {
+              "column": "Challenges Encountered / Remarks",
+              "issue_type": "null_tokens_detected",
+              "severity": "warn",
+              "count": 7673,
+              "policy_section": "null_handling.null_tokens_case_insensitive",
+              "owner": "programmatic",
+              "action": "convert_to_proper_null",
+              "examples": [
+                " ",
+                "none\n"
+              ]
+            }
+          ],
+          "programmatic_fixes_available": 1,
+          "human_review_required": 0
+        },
+        {
+          "column_name": "Should be in Pulse Coaching Dash?",
+          "column_id": "col_c8306328",
+          "ordinal_position": 24,
+          "logical_type": "str",
+          "role": "dimension",
+          "criticality": "medium",
+          "statistics": {
+            "sample_size": 9331,
+            "completeness": {
+              "null_count": 2847,
+              "null_rate": 0.3051
+            },
+            "cardinality": {
+              "distinct_count": 3,
+              "distinct_rate": 0.0003
+            }
+          },
+          "policy_issues": [
+            {
+              "column": "Should be in Pulse Coaching Dash?",
+              "issue_type": "null_tokens_detected",
+              "severity": "warn",
+              "count": 3472,
+              "policy_section": "null_handling.null_tokens_case_insensitive",
+              "owner": "programmatic",
+              "action": "convert_to_proper_null",
+              "examples": [
+                " "
+              ]
+            }
+          ],
+          "programmatic_fixes_available": 1,
+          "human_review_required": 0
+        },
+        {
+          "column_name": "Data Feed File Name",
+          "column_id": "col_fd467eb0",
+          "ordinal_position": 25,
+          "logical_type": "str",
+          "role": "dimension",
+          "criticality": "medium",
+          "statistics": {
+            "sample_size": 9331,
+            "completeness": {
+              "null_count": 8648,
+              "null_rate": 0.9268
+            },
+            "cardinality": {
+              "distinct_count": 43,
+              "distinct_rate": 0.0046
+            }
+          },
+          "policy_issues": [
+            {
+              "column": "Data Feed File Name",
+              "issue_type": "null_tokens_detected",
+              "severity": "warn",
+              "count": 8648,
+              "policy_section": "null_handling.null_tokens_case_insensitive",
+              "owner": "programmatic",
+              "action": "convert_to_proper_null",
+              "examples": []
+            }
+          ],
+          "programmatic_fixes_available": 1,
+          "human_review_required": 0
+        },
+        {
+          "column_name": "Status",
+          "column_id": "col_2d0ca203",
+          "ordinal_position": 26,
+          "logical_type": "str",
+          "role": "status",
+          "criticality": "medium",
+          "statistics": {
+            "sample_size": 9331,
+            "completeness": {
+              "null_count": 5408,
+              "null_rate": 0.5796
+            },
+            "cardinality": {
+              "distinct_count": 5,
+              "distinct_rate": 0.0005
+            }
+          },
+          "policy_issues": [
+            {
+              "column": "Status",
+              "issue_type": "null_tokens_detected",
+              "severity": "warn",
+              "count": 5676,
+              "policy_section": "null_handling.null_tokens_case_insensitive",
+              "owner": "programmatic",
+              "action": "convert_to_proper_null",
+              "examples": [
+                " "
+              ]
+            }
+          ],
+          "programmatic_fixes_available": 1,
+          "human_review_required": 0
+        },
+        {
+          "column_name": "Anon BA Email",
+          "column_id": "col_e0c09767",
+          "ordinal_position": 27,
+          "logical_type": "str",
+          "role": "identifier",
+          "criticality": "critical",
+          "statistics": {
+            "sample_size": 9331,
+            "completeness": {
+              "null_count": 2437,
+              "null_rate": 0.2612
+            },
+            "cardinality": {
+              "distinct_count": 80,
+              "distinct_rate": 0.0086
+            }
+          },
+          "policy_issues": [
+            {
+              "column": "Anon BA Email",
+              "issue_type": "null_tokens_detected",
+              "severity": "warn",
+              "count": 2437,
+              "policy_section": "null_handling.null_tokens_case_insensitive",
+              "owner": "programmatic",
+              "action": "convert_to_proper_null",
+              "examples": []
+            },
+            {
+              "column": "Anon BA Email",
+              "issue_type": "missing_required_field",
+              "severity": "error",
+              "count": 2437,
+              "policy_section": "constraints.required_fields (role=identifier)",
+              "owner": "human",
+              "action": "quarantine_row",
+              "criticality": "critical"
+            },
+            {
+              "column": "Anon BA Email",
+              "issue_type": "unmasked_pii",
+              "severity": "warn",
+              "count": 6894,
+              "pii_types": [
+                "email"
+              ],
+              "policy_section": "pii_handling.masking.methods.email",
+              "owner": "programmatic",
+              "action": "hash",
+              "details": "6894 email addresses detected"
+            }
+          ],
+          "programmatic_fixes_available": 2,
+          "human_review_required": 1
+        },
+        {
+          "column_name": "Anon Updated By Email",
+          "column_id": "col_50e35935",
+          "ordinal_position": 28,
+          "logical_type": "str",
+          "role": "identifier",
+          "criticality": "critical",
+          "statistics": {
+            "sample_size": 9331,
+            "completeness": {
+              "null_count": 2746,
+              "null_rate": 0.2943
+            },
+            "cardinality": {
+              "distinct_count": 70,
+              "distinct_rate": 0.0075
+            }
+          },
+          "policy_issues": [
+            {
+              "column": "Anon Updated By Email",
+              "issue_type": "null_tokens_detected",
+              "severity": "warn",
+              "count": 2746,
+              "policy_section": "null_handling.null_tokens_case_insensitive",
+              "owner": "programmatic",
+              "action": "convert_to_proper_null",
+              "examples": []
+            },
+            {
+              "column": "Anon Updated By Email",
+              "issue_type": "missing_required_field",
+              "severity": "error",
+              "count": 2746,
+              "policy_section": "constraints.required_fields (role=identifier)",
+              "owner": "human",
+              "action": "quarantine_row",
+              "criticality": "critical"
+            },
+            {
+              "column": "Anon Updated By Email",
+              "issue_type": "unmasked_pii",
+              "severity": "warn",
+              "count": 6585,
+              "pii_types": [
+                "email"
+              ],
+              "policy_section": "pii_handling.masking.methods.email",
+              "owner": "programmatic",
+              "action": "hash",
+              "details": "6585 email addresses detected"
+            }
+          ],
+          "programmatic_fixes_available": 2,
+          "human_review_required": 1
+        },
+        {
+          "column_name": "POC1",
+          "column_id": "col_b03ded3a",
+          "ordinal_position": 29,
+          "logical_type": "str",
+          "role": "dimension",
+          "criticality": "medium",
+          "statistics": {
+            "sample_size": 9331,
+            "completeness": {
+              "null_count": 9322,
+              "null_rate": 0.999
+            },
+            "cardinality": {
+              "distinct_count": 1,
+              "distinct_rate": 0.0001
+            }
+          },
+          "policy_issues": [
+            {
+              "column": "POC1",
+              "issue_type": "null_tokens_detected",
+              "severity": "warn",
+              "count": 9322,
+              "policy_section": "null_handling.null_tokens_case_insensitive",
+              "owner": "programmatic",
+              "action": "convert_to_proper_null",
+              "examples": []
+            }
+          ],
+          "programmatic_fixes_available": 1,
+          "human_review_required": 0
+        },
+        {
+          "column_name": "POC2",
+          "column_id": "col_9696de00",
+          "ordinal_position": 30,
+          "logical_type": "float64",
+          "role": "measure",
+          "criticality": "high",
+          "statistics": {
+            "sample_size": 9331,
+            "completeness": {
+              "null_count": 9331,
+              "null_rate": 1.0
+            },
+            "cardinality": {
+              "distinct_count": 0,
+              "distinct_rate": 0.0
+            }
+          },
+          "policy_issues": [
+            {
+              "column": "POC2",
+              "issue_type": "null_tokens_detected",
+              "severity": "warn",
+              "count": 9331,
+              "policy_section": "null_handling.null_tokens_case_insensitive",
+              "owner": "programmatic",
+              "action": "convert_to_proper_null",
+              "examples": []
+            }
+          ],
+          "programmatic_fixes_available": 1,
+          "human_review_required": 0
+        },
+        {
+          "column_name": "POC3",
+          "column_id": "col_8898a2cf",
+          "ordinal_position": 31,
+          "logical_type": "float64",
+          "role": "measure",
+          "criticality": "high",
+          "statistics": {
+            "sample_size": 9331,
+            "completeness": {
+              "null_count": 9331,
+              "null_rate": 1.0
+            },
+            "cardinality": {
+              "distinct_count": 0,
+              "distinct_rate": 0.0
+            }
+          },
+          "policy_issues": [
+            {
+              "column": "POC3",
+              "issue_type": "null_tokens_detected",
+              "severity": "warn",
+              "count": 9331,
+              "policy_section": "null_handling.null_tokens_case_insensitive",
+              "owner": "programmatic",
+              "action": "convert_to_proper_null",
+              "examples": []
+            }
+          ],
+          "programmatic_fixes_available": 1,
+          "human_review_required": 0
+        },
+        {
+          "column_name": "POC4",
+          "column_id": "col_9b0fd3ee",
+          "ordinal_position": 32,
+          "logical_type": "float64",
+          "role": "measure",
+          "criticality": "high",
+          "statistics": {
+            "sample_size": 9331,
+            "completeness": {
+              "null_count": 9331,
+              "null_rate": 1.0
+            },
+            "cardinality": {
+              "distinct_count": 0,
+              "distinct_rate": 0.0
+            }
+          },
+          "policy_issues": [
+            {
+              "column": "POC4",
+              "issue_type": "null_tokens_detected",
+              "severity": "warn",
+              "count": 9331,
+              "policy_section": "null_handling.null_tokens_case_insensitive",
+              "owner": "programmatic",
+              "action": "convert_to_proper_null",
+              "examples": []
+            }
+          ],
+          "programmatic_fixes_available": 1,
+          "human_review_required": 0
+        },
+        {
+          "column_name": "KPI Migration Status",
+          "column_id": "col_c0e6e863",
+          "ordinal_position": 33,
+          "logical_type": "str",
+          "role": "status",
+          "criticality": "medium",
+          "statistics": {
+            "sample_size": 9331,
+            "completeness": {
+              "null_count": 5626,
+              "null_rate": 0.6029
+            },
+            "cardinality": {
+              "distinct_count": 5,
+              "distinct_rate": 0.0005
+            }
+          },
+          "policy_issues": [
+            {
+              "column": "KPI Migration Status",
+              "issue_type": "null_tokens_detected",
+              "severity": "warn",
+              "count": 5626,
+              "policy_section": "null_handling.null_tokens_case_insensitive",
+              "owner": "programmatic",
+              "action": "convert_to_proper_null",
+              "examples": []
+            }
+          ],
+          "programmatic_fixes_available": 1,
+          "human_review_required": 0
+        },
+        {
+          "column_name": "Domo Input Dataset",
+          "column_id": "col_085104ba",
+          "ordinal_position": 34,
+          "logical_type": "str",
+          "role": "dimension",
+          "criticality": "medium",
+          "statistics": {
+            "sample_size": 9331,
+            "completeness": {
+              "null_count": 8216,
+              "null_rate": 0.8805
+            },
+            "cardinality": {
+              "distinct_count": 274,
+              "distinct_rate": 0.0294
+            }
+          },
+          "policy_issues": [
+            {
+              "column": "Domo Input Dataset",
+              "issue_type": "null_tokens_detected",
+              "severity": "warn",
+              "count": 8218,
+              "policy_section": "null_handling.null_tokens_case_insensitive",
+              "owner": "programmatic",
+              "action": "convert_to_proper_null",
+              "examples": [
+                "\n"
+              ]
+            }
+          ],
+          "programmatic_fixes_available": 1,
+          "human_review_required": 0
+        },
+        {
+          "column_name": "Domo Output Dataset",
+          "column_id": "col_f30d5e63",
+          "ordinal_position": 35,
+          "logical_type": "str",
+          "role": "dimension",
+          "criticality": "medium",
+          "statistics": {
+            "sample_size": 9331,
+            "completeness": {
+              "null_count": 8249,
+              "null_rate": 0.884
+            },
+            "cardinality": {
+              "distinct_count": 203,
+              "distinct_rate": 0.0218
+            }
+          },
+          "policy_issues": [
+            {
+              "column": "Domo Output Dataset",
+              "issue_type": "null_tokens_detected",
+              "severity": "warn",
+              "count": 8249,
+              "policy_section": "null_handling.null_tokens_case_insensitive",
+              "owner": "programmatic",
+              "action": "convert_to_proper_null",
+              "examples": []
+            }
+          ],
+          "programmatic_fixes_available": 1,
+          "human_review_required": 0
+        },
+        {
+          "column_name": "Domo Formula or Beast Mode",
+          "column_id": "col_ec2ca1e7",
+          "ordinal_position": 36,
+          "logical_type": "str",
+          "role": "dimension",
+          "criticality": "medium",
+          "statistics": {
+            "sample_size": 9331,
+            "completeness": {
+              "null_count": 8117,
+              "null_rate": 0.8699
+            },
+            "cardinality": {
+              "distinct_count": 372,
+              "distinct_rate": 0.0399
+            }
+          },
+          "policy_issues": [
+            {
+              "column": "Domo Formula or Beast Mode",
+              "issue_type": "null_tokens_detected",
+              "severity": "warn",
+              "count": 8117,
+              "policy_section": "null_handling.null_tokens_case_insensitive",
+              "owner": "programmatic",
+              "action": "convert_to_proper_null",
+              "examples": []
+            }
+          ],
+          "programmatic_fixes_available": 1,
+          "human_review_required": 0
+        },
+        {
+          "column_name": "Lowest Data Granularity",
+          "column_id": "col_0220a3f4",
+          "ordinal_position": 37,
+          "logical_type": "str",
+          "role": "dimension",
+          "criticality": "medium",
+          "statistics": {
+            "sample_size": 9331,
+            "completeness": {
+              "null_count": 7982,
+              "null_rate": 0.8554
+            },
+            "cardinality": {
+              "distinct_count": 5,
+              "distinct_rate": 0.0005
+            }
+          },
+          "policy_issues": [
+            {
+              "column": "Lowest Data Granularity",
+              "issue_type": "null_tokens_detected",
+              "severity": "warn",
+              "count": 7982,
+              "policy_section": "null_handling.null_tokens_case_insensitive",
+              "owner": "programmatic",
+              "action": "convert_to_proper_null",
+              "examples": []
+            }
+          ],
+          "programmatic_fixes_available": 1,
+          "human_review_required": 0
+        },
+        {
+          "column_name": "Pulse",
+          "column_id": "col_9c2636c2",
+          "ordinal_position": 38,
+          "logical_type": "str",
+          "role": "dimension",
+          "criticality": "medium",
+          "statistics": {
+            "sample_size": 9331,
+            "completeness": {
+              "null_count": 0,
+              "null_rate": 0.0
+            },
+            "cardinality": {
+              "distinct_count": 3,
+              "distinct_rate": 0.0003
+            }
+          },
+          "policy_issues": [
+            {
+              "column": "Pulse",
+              "issue_type": "null_tokens_detected",
+              "severity": "warn",
+              "count": 3472,
+              "policy_section": "null_handling.null_tokens_case_insensitive",
+              "owner": "programmatic",
+              "action": "convert_to_proper_null",
+              "examples": [
+                "-"
+              ]
+            }
+          ],
+          "programmatic_fixes_available": 1,
+          "human_review_required": 0
+        },
+        {
+          "column_name": "Modified",
+          "column_id": "col_057db075",
+          "ordinal_position": 39,
+          "logical_type": "float64",
+          "role": "timestamp",
+          "criticality": "critical",
+          "statistics": {
+            "sample_size": 9331,
+            "completeness": {
+              "null_count": 0,
+              "null_rate": 0.0
+            },
+            "cardinality": {
+              "distinct_count": 5907,
+              "distinct_rate": 0.6331
+            }
+          },
+          "policy_issues": [
+            {
+              "column": "Modified",
+              "issue_type": "timestamp_wrong_type",
+              "severity": "error",
+              "count": 9331,
+              "policy_section": "classification.column_roles.timestamp",
+              "owner": "programmatic",
+              "action": "convert_to_datetime",
+              "details": "Current type: float64, expected: datetime"
+            }
+          ],
+          "programmatic_fixes_available": 1,
+          "human_review_required": 0
+        },
+        {
+          "column_name": "Anon Modified By",
+          "column_id": "col_2e18a6e5",
+          "ordinal_position": 40,
+          "logical_type": "str",
+          "role": "timestamp",
+          "criticality": "critical",
+          "statistics": {
+            "sample_size": 9331,
+            "completeness": {
+              "null_count": 0,
+              "null_rate": 0.0
+            },
+            "cardinality": {
+              "distinct_count": 150,
+              "distinct_rate": 0.0161
+            }
+          },
+          "policy_issues": [
+            {
+              "column": "Anon Modified By",
+              "issue_type": "timestamp_wrong_type",
+              "severity": "error",
+              "count": 9331,
+              "policy_section": "classification.column_roles.timestamp",
+              "owner": "programmatic",
+              "action": "convert_to_datetime",
+              "details": "Current type: str, expected: datetime"
+            }
+          ],
+          "programmatic_fixes_available": 1,
+          "human_review_required": 0
+        },
+        {
+          "column_name": "ID",
+          "column_id": "col_c1fd8b5e",
+          "ordinal_position": 41,
+          "logical_type": "int64",
+          "role": "identifier",
+          "criticality": "critical",
+          "statistics": {
+            "sample_size": 9331,
+            "completeness": {
+              "null_count": 0,
+              "null_rate": 0.0
+            },
+            "cardinality": {
+              "distinct_count": 9331,
+              "distinct_rate": 1.0
+            }
+          },
+          "policy_issues": [
+            {
+              "column": "ID",
+              "issue_type": "primary_key_candidate",
+              "severity": "info",
+              "count": 9331,
+              "policy_section": "constraints.uniqueness.inferred_pk_handling",
+              "owner": "human",
+              "action": "flag_for_human_confirmation",
+              "details": "Column is 100% unique across 9331 rows"
+            }
+          ],
+          "programmatic_fixes_available": 0,
+          "human_review_required": 1
+        },
+        {
+          "column_name": "UniqueID",
+          "column_id": "col_61a887ff",
+          "ordinal_position": 42,
+          "logical_type": "int64",
+          "role": "identifier",
+          "criticality": "critical",
+          "statistics": {
+            "sample_size": 9331,
+            "completeness": {
+              "null_count": 0,
+              "null_rate": 0.0
+            },
+            "cardinality": {
+              "distinct_count": 9325,
+              "distinct_rate": 0.9994
+            }
+          },
+          "policy_issues": [],
+          "programmatic_fixes_available": 0,
+          "human_review_required": 0
+        },
+        {
+          "column_name": "Pulse Domo Integration",
+          "column_id": "col_3aae5bdd",
+          "ordinal_position": 43,
+          "logical_type": "str",
+          "role": "dimension",
+          "criticality": "medium",
+          "statistics": {
+            "sample_size": 9331,
+            "completeness": {
+              "null_count": 9063,
+              "null_rate": 0.9713
+            },
+            "cardinality": {
+              "distinct_count": 3,
+              "distinct_rate": 0.0003
+            }
+          },
+          "policy_issues": [
+            {
+              "column": "Pulse Domo Integration",
+              "issue_type": "null_tokens_detected",
+              "severity": "warn",
+              "count": 9063,
+              "policy_section": "null_handling.null_tokens_case_insensitive",
+              "owner": "programmatic",
+              "action": "convert_to_proper_null",
+              "examples": []
+            }
+          ],
+          "programmatic_fixes_available": 1,
+          "human_review_required": 0
+        },
+        {
+          "column_name": "Item Type",
+          "column_id": "col_39eff7bd",
+          "ordinal_position": 44,
+          "logical_type": "str",
+          "role": "dimension",
+          "criticality": "medium",
+          "statistics": {
+            "sample_size": 9331,
+            "completeness": {
+              "null_count": 0,
+              "null_rate": 0.0
+            },
+            "cardinality": {
+              "distinct_count": 1,
+              "distinct_rate": 0.0001
+            }
+          },
+          "policy_issues": [],
+          "programmatic_fixes_available": 0,
+          "human_review_required": 0
+        },
+        {
+          "column_name": "Path",
+          "column_id": "col_53c76682",
+          "ordinal_position": 45,
+          "logical_type": "str",
+          "role": "dimension",
+          "criticality": "medium",
+          "statistics": {
+            "sample_size": 9331,
+            "completeness": {
+              "null_count": 0,
+              "null_rate": 0.0
+            },
+            "cardinality": {
+              "distinct_count": 1,
+              "distinct_rate": 0.0001
+            }
+          },
+          "policy_issues": [],
+          "programmatic_fixes_available": 0,
+          "human_review_required": 0
+        }
+      ],
+      "total_issues": 50,
+      "programmatic_fixes": 44,
+      "human_reviews": 6
+    }
+  ],
+  "issues_summary": {
+    "total_issues": 50,
+    "by_severity": {
+      "error": 7,
+      "warn": 42,
+      "info": 1
+    },
+    "by_owner": {
+      "programmatic": 44,
+      "human": 6
+    }
+  }
+}

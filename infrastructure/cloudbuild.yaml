@@ -1,0 +1,4 @@
+steps:
+  - name: 'python:3.9'
+    entrypoint: 'python'
+    args: ['--version']
