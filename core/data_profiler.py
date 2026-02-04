@@ -58,6 +58,10 @@ class PolicyEngine:
         self.whitespace_tokens = set(
             self.policy.get('null_handling', {}).get('whitespace_tokens', [])
         )
+        self.null_token_regexes = [
+            re.compile(pattern) for pattern in 
+            self.policy.get('null_handling', {}).get('null_token_regexes', [])
+        ]
         self.preserve_phrases = set(
             self.policy.get('null_handling', {}).get('preserve_phrases', [])
         )
@@ -113,6 +117,13 @@ class PolicyEngine:
             if str_val in self.preserve_phrases:
                 return False
             return True
+            
+        # Check regex matches
+        for pattern in self.null_token_regexes:
+            if pattern.match(str_val):
+                if str_val in self.preserve_phrases:
+                    return False
+                return True
         
         return False
     

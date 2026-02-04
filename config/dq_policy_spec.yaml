@@ -58,6 +58,8 @@ null_handling:
     - "na"
     - "none"
     - "nan"
+  null_token_regexes:
+    - "^-+$"  # one or more dashes (applies to ALL columns)
   preserve_phrases:
     - "No challenges encountered"
     - "none required"

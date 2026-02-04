@@ -1,6 +1,11 @@
 venv/
 __pycache__/
 *.pyc
-uploads/
-outputs/
 .DS_Store
+.env
+
+# Data directories
+output/
+input/*
+!input/.gitkeep
+uploads/

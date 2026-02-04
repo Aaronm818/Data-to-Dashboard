@@ -14,6 +14,17 @@ from pathlib import Path
 from datetime import datetime
 from typing import Dict, List, Tuple, Any
 import argparse
+import re
+
+
+# Import StandardOutputManager
+try:
+    from core.output_manager import StandardOutputManager
+except ImportError:
+    # Handle running as script from core directory or root
+    import sys
+    sys.path.append(str(Path(__file__).parent.parent))
+    from core.output_manager import StandardOutputManager
 
 
 class RemediationEngine:
@@ -68,6 +79,11 @@ class RemediationEngine:
             self.policy.get('null_handling', {}).get('whitespace_tokens', [])
         )
 
+        null_token_regexes = [
+            re.compile(pattern) for pattern in 
+            self.policy.get('null_handling', {}).get('null_token_regexes', [])
+        ]
+
         def is_null_value(x):
             """Check if value should be converted to NULL per policy"""
             if not isinstance(x, str):
@@ -82,6 +98,11 @@ class RemediationEngine:
             # Check if stripped value is a null token (case insensitive)
             if stripped.lower() in null_tokens:
                 return True
+                
+            # Check regex matches
+            for pattern in null_token_regexes:
+                if pattern.match(stripped):
+                    return True
             return False
 
         for issue in issues:
@@ -350,19 +371,13 @@ def main():
     parser.add_argument('-p', '--policy', default='config/dq_policy_spec.yaml',
                        help='Path to DQ Policy Spec YAML')
     parser.add_argument('-o', '--output-dir', default='output',
-                       help='Output directory for remediated files')
+                       help='Output directory for remediated files (default: output)')
     
     args = parser.parse_args()
     
-    # Create output directory
-    output_dir = Path(args.output_dir)
-    output_dir.mkdir(parents=True, exist_ok=True)
+    args = parser.parse_args()
     
-    # Create timestamped subdirectory
-    timestamp = datetime.utcnow().strftime('%Y-%m-%d_%H-%M-%S')
-    run_dir = output_dir / timestamp
-    run_dir.mkdir(parents=True, exist_ok=True)
-    
+    # Initialize message
     print(f"Reading data from {args.input_file}...")
     
     # Read original data
@@ -386,28 +401,22 @@ def main():
     # Generate summary
     summary = engine.generate_remediation_summary(df_original, df_remediated, human_review_issues)
     
-    # Save outputs
-    original_output = run_dir / f"original_{file_path.name}"
-    remediated_output = run_dir / f"remediated_{file_path.name}"
-    summary_output = run_dir / "remediation_summary.json"
+    # --- OUTPUT MANAGEMENT ---
+    output_manager = StandardOutputManager(base_output_dir=args.output_dir)
+    run_dir = output_manager.create_run_directory(file_path.name)
     
     print(f"\nSaving outputs to {run_dir}...")
     
-    # Save original (for reference)
-    if file_path.suffix.lower() == '.csv':
-        df_original.to_csv(original_output, index=False)
-        df_remediated.to_csv(remediated_output, index=False)
-    else:
-        df_original.to_excel(original_output, index=False)
-        df_remediated.to_excel(remediated_output, index=False)
+    # Save artifacts using manager
+    original_path = output_manager.save_original(file_path, df_original)
+    remediated_path = output_manager.save_remediated(df_remediated, file_path.name)
+    summary_path = output_manager.save_summary(summary)
+    # Also save the profile for completeness
+    output_manager.save_profile(profile)
     
-    # Save summary
-    with open(summary_output, 'w') as f:
-        json.dump(summary, f, indent=2)
-    
-    print(f"✓ Original saved: {original_output}")
-    print(f"✓ Remediated saved: {remediated_output}")
-    print(f"✓ Summary saved: {summary_output}")
+    print(f"✓ Original saved: {original_path}")
+    print(f"✓ Remediated saved: {remediated_path}")
+    print(f"✓ Summary saved: {summary_path}")
     
     print(f"\n{'='*60}")
     print("REMEDIATION SUMMARY")

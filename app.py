@@ -9,14 +9,16 @@ from datetime import datetime
 
 # Import core engines
 from core.data_profiler import DataProfiler
+from core.data_profiler import DataProfiler
 from core.remediation_engine import RemediationEngine
+from core.output_manager import StandardOutputManager
 
 app = Flask(__name__)
 app.secret_key = 'super-secret-key-for-demo'  # In production, use a secure key
 
 # Configuration
-UPLOAD_FOLDER = 'uploads'
-OUTPUT_FOLDER = 'outputs'
+UPLOAD_FOLDER = 'input'
+OUTPUT_FOLDER = 'output'
 CONFIG_PATH = 'config/dq_policy_spec.yaml'
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -103,27 +105,27 @@ def remediate():
     remediated_df, human_review = engine.remediate_dataframe(df, profile_data)
     summary = engine.generate_remediation_summary(df, remediated_df, human_review)
     
-    # Save outputs
-    timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
-    output_subdir = os.path.join(app.config['OUTPUT_FOLDER'], f"{timestamp}_{filename}")
-    os.makedirs(output_subdir, exist_ok=True)
+    # Create output manager
+    output_manager = StandardOutputManager(base_output_dir=app.config['OUTPUT_FOLDER'])
+    run_dir = output_manager.create_run_directory(filename)
     
-    remediated_filename = f"remediated_{filename}"
-    remediated_path = os.path.join(output_subdir, remediated_filename)
-    summary_path = os.path.join(output_subdir, "summary.json")
+    # Save artifacts
+    output_manager.save_remediated(remediated_df, filename)
+    output_manager.save_summary(summary)
+    output_manager.save_profile(profile_data)
     
-    if filename.endswith('.csv'):
-        remediated_df.to_csv(remediated_path, index=False)
-    else:
-        remediated_df.to_excel(remediated_path, index=False)
-        
-    with open(summary_path, 'w') as f:
-        json.dump(summary, f, indent=2, default=str)
-        
+    # We also want to save the original file for audit purposes
+    # Since we have it in uploads/, we can copy it
+    output_manager.save_original(file_path)
+    
+    # Construct download paths for the template
+    # run_dir.name is the directory name (e.g. run_2024...)
+    remediated_filename = f"remediated{Path(filename).suffix}"
+    
     return render_template('results.html', 
                          summary=summary, 
                          remediated_file=remediated_filename, 
-                         output_dir=f"{timestamp}_{filename}")
+                         output_dir=run_dir.name)
 
 @app.route('/download/<path:dirname>/<path:filename>')
 def download_file(dirname, filename):
