@@ -250,19 +250,26 @@ class DataProfiler:
         """
         col_lower = col_name.lower()
         dtype = series.dtype
-        
+
+        # Split column name into tokens for word-boundary matching
+        # Handles snake_case, camelCase, and space-separated names
+        import re
+        col_tokens = set(re.split(r'[_\s]+|(?<=[a-z])(?=[A-Z])', col_lower))
+
         # Identifier detection
         if any(keyword in col_lower for keyword in ['id', 'key', 'uuid', 'guid']):
             return 'identifier'
-        
+
         # Email = identifier (and PII)
         if 'email' in col_lower:
             return 'identifier'
-        
-        # Timestamp detection
-        if any(keyword in col_lower for keyword in ['date', 'time', 'timestamp', 'modified', 'created']):
+
+        # Timestamp detection - use word boundary matching to avoid false positives
+        # e.g., "Sentiment" contains "time" but is not a timestamp
+        timestamp_keywords = {'date', 'time', 'timestamp', 'modified', 'created', 'datetime'}
+        if col_tokens & timestamp_keywords:
             return 'timestamp'
-        
+
         # Measure detection (numeric types)
         if pd.api.types.is_numeric_dtype(dtype):
             # But check for IDs that happen to be numeric

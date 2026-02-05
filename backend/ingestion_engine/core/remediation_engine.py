@@ -458,10 +458,13 @@ def main():
     summary_path = output_manager.save_summary(summary)
     # Also save the profile for completeness
     output_manager.save_profile(profile)
-    
+    # Generate HTML profile report
+    report_path = output_manager.save_profile_report(profile)
+
     print(f"✓ Original saved: {original_path}")
     print(f"✓ Remediated saved: {remediated_path}")
     print(f"✓ Summary saved: {summary_path}")
+    print(f"✓ Profile report saved: {report_path}")
     
     print(f"\n{'='*60}")
     print("REMEDIATION SUMMARY")

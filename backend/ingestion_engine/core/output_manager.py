@@ -85,9 +85,33 @@ class StandardOutputManager:
         """Save the profile JSON."""
         if not self.run_dir:
              raise RuntimeError("Run directory not created. Call create_run_directory first.")
-             
+
         target_path = self.run_dir / "profile.json"
         with open(target_path, 'w') as f:
              json.dump(profile_data, f, indent=2, default=str)
-             
+
+        return target_path
+
+    def save_profile_report(self, profile_data: Dict[str, Any], template_path: str = None):
+        """
+        Generate and save an HTML profile report.
+
+        Args:
+            profile_data: Profile dictionary
+            template_path: Optional custom template path
+
+        Returns:
+            Path to the generated HTML report
+        """
+        if not self.run_dir:
+            raise RuntimeError("Run directory not created. Call create_run_directory first.")
+
+        # Import here to avoid circular imports
+        from core.profile_report_generator import ProfileReportGenerator
+
+        target_path = self.run_dir / "profile_report.html"
+
+        generator = ProfileReportGenerator(template_path=template_path)
+        generator.generate_report_from_dict(profile_data, str(target_path))
+
         return target_path
