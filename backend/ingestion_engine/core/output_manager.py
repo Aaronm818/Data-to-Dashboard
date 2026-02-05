@@ -4,6 +4,9 @@ import pandas as pd
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any, Union
+import yaml
+from dataclasses import is_dataclass, asdict
+from enum import Enum
 
 class StandardOutputManager:
     """
@@ -115,3 +118,64 @@ class StandardOutputManager:
         generator.generate_report_from_dict(profile_data, str(target_path))
 
         return target_path
+
+    def save_wide_table_plan(self, plan: Any, format: str = 'both'):
+        """
+        Save the wide table plan to JSON and/or YAML.
+        
+        Args:
+            plan: WideTablePlan object
+            format: 'json', 'yaml', or 'both'
+        """
+        if not self.run_dir:
+            raise RuntimeError("Run directory not created. Call create_run_directory first.")
+
+        # Convert to dict
+        plan_dict = self._plan_to_dict(plan)
+
+        saved_paths = []
+
+        if format in ['json', 'both']:
+            json_path = self.run_dir / "wide_table_plan.json"
+            with open(json_path, 'w') as f:
+                json.dump(plan_dict, f, indent=2, default=str)
+            saved_paths.append(json_path)
+
+        if format in ['yaml', 'both']:
+            yaml_path = self.run_dir / "wide_table_plan.yaml"
+            with open(yaml_path, 'w') as f:
+                yaml.dump(plan_dict, f, default_flow_style=False, sort_keys=False)
+            saved_paths.append(yaml_path)
+
+        return saved_paths
+
+    def save_wide_table_report(self, plan: Any, template_path: str = None):
+        """
+        Generate and save HTML report for wide table plan.
+        """
+        if not self.run_dir:
+            raise RuntimeError("Run directory not created. Call create_run_directory first.")
+
+        from core.wtt_report_generator import WideTableReportGenerator
+
+        target_path = self.run_dir / "wide_table_report.html"
+        plan_dict = self._plan_to_dict(plan)
+
+        generator = WideTableReportGenerator(template_path=template_path)
+        generator.generate_report(plan_dict, str(target_path))
+
+        return target_path
+
+    def _plan_to_dict(self, obj: Any) -> Any:
+        """Helper to convert dataclasses to dict handling Enums"""
+        if is_dataclass(obj):
+            return {k: self._plan_to_dict(v) for k, v in asdict(obj).items()}
+        elif isinstance(obj, list):
+            return [self._plan_to_dict(item) for item in obj]
+        elif isinstance(obj, dict):
+            return {k: self._plan_to_dict(v) for k, v in obj.items()}
+        elif isinstance(obj, Enum):
+            return obj.value
+        else:
+            return obj
+
