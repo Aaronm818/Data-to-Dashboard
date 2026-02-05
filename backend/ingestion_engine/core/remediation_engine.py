@@ -126,6 +126,48 @@ class RemediationEngine:
         
         return df_remediated
     
+    def apply_missing_value_fill(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Fill missing values per policy"""
+        df_remediated = df.copy()
+        
+        fill_rules = self.policy.get('null_handling', {}).get('fill_missing', [])
+        
+        for rule in fill_rules:
+            # 1. Identify target columns
+            target_columns = []
+            
+            # Match by regex
+            if 'match' in rule and 'column_name_regex' in rule['match']:
+                pattern = re.compile(rule['match']['column_name_regex'])
+                target_columns = [col for col in df.columns if pattern.search(col)]
+            
+            if not target_columns:
+                continue
+                
+            fill_value = rule.get('value')
+            action_name = rule.get('action', 'fill_missing')
+            
+            for col in target_columns:
+                # Find nulls (NaNs)
+                # Note: null_token conversion must happen BEFORE this step
+                mask = df_remediated[col].isna()
+                
+                if mask.any():
+                    affected_count = mask.sum()
+                    
+                    df_remediated.loc[mask, col] = fill_value
+                    
+                    self.remediation_log.append({
+                        'column': col,
+                        'action': action_name,
+                        'affected_count': int(affected_count),
+                        'before_examples': ['NULL'] * min(int(affected_count), 3),
+                        'after_examples': [fill_value] * min(int(affected_count), 3),
+                        'policy_section': 'null_handling.fill_missing'
+                    })
+                    
+        return df_remediated
+    
     def apply_type_coercion(self, df: pd.DataFrame, issues: List[Dict]) -> pd.DataFrame:
         """Apply safe type coercions per policy"""
         df_remediated = df.copy()
@@ -325,6 +367,9 @@ class RemediationEngine:
         
         # 2. Convert null tokens
         df_remediated = self.apply_null_token_conversion(df_remediated, programmatic_issues)
+        
+        # 2b. Fill missing values (Must happen AFTER null token conversion)
+        df_remediated = self.apply_missing_value_fill(df_remediated)
         
         # 3. Type coercion
         df_remediated = self.apply_type_coercion(df_remediated, programmatic_issues)

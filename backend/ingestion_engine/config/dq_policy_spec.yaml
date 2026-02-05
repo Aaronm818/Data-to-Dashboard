@@ -66,7 +66,15 @@ null_handling:
   treat_zero_string_as_null:
     enabled: false
     applies_to_roles: ["dimension", "status"]
+  treat_zero_string_as_null:
+    enabled: false
+    applies_to_roles: ["dimension", "status"]
     note: "Enable only if a specific column’s business rules define '0' as missing."
+  fill_missing:
+    - match:
+        column_name_regex: "(?i)email"
+      value: "unknown@domain.com"
+      action: "fill_unknown_member"
 
 normalization:
   casing:
