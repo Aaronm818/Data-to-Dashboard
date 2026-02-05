@@ -1,0 +1,315 @@
+skill_spec_version: "0.1.0"
+kind: "skill"
+name: "Wide Table Transformer"
+short_name: "WTT"
+purpose: >
+  Analyze a clean, profiled input dataset and produce one or more AI-ready wide tables
+  (schema + DDL-ready column definitions + load plan) that can be used to generate dashboards
+  without joins or implicit transformations.
+
+scope:
+  in_scope:
+    - "Derive dataset grain and keys"
+    - "Classify columns into roles"
+    - "Design wide table schemas (one or more) optimized for AI chart generation"
+    - "Specify transformations needed to populate wide tables from the clean input"
+    - "Recommend sidecar tables for excluded/non-analytic fields"
+    - "Emit database object plan: table names, column names, data types, constraints (minimal)"
+  out_of_scope:
+    - "Data cleaning / remediation (assumed complete upstream)"
+    - "Star schema / dimension modeling"
+    - "Business KPI metric definition governance (semantic layer) beyond basic hints"
+    - "Complex privacy redaction (handled upstream by DQ policy)"
+    - "Cross-dataset conformance (handled at a later integration stage)"
+
+inputs:
+  required:
+    - name: "profile_json"
+      description: "Profiling output for the cleaned dataset (columns, stats, semantic hints)."
+      source: "Data Profile Template v1.1.0"
+      reference: "entities[].columns[]..."
+    - name: "data_sample"
+      description: "Optional sample rows for ambiguity resolution (small, representative)."
+      optional: true
+    - name: "control_params"
+      description: "Runtime knobs (preferred warehouse types, naming conventions, etc.)."
+      optional: true
+  assumed_true:
+    - "Nulls/sentinels normalized per Data Quality process"
+    - "PII handled or policy-approved"
+    - "Encoding and parsing issues resolved"
+
+outputs:
+  primary:
+    - name: "wide_table_plan"
+      format: "yaml|json"
+      must_include:
+        - "tables[] (one or more)"
+        - "grain_definition per table"
+        - "column catalog with roles, types, source mapping, transforms"
+        - "excluded_columns with reasons"
+        - "sidecar_tables (optional)"
+        - "load_plan (mapping from input to target columns)"
+  secondary:
+    - name: "ddl_templates"
+      format: "sql"
+      description: "Parameterized DDL for target platform (optional template output)."
+      optional: true
+
+execution_principles:
+  - id: "WTT-P1"
+    text: "Prefer missing over misleading. Do not invent business meaning."
+  - id: "WTT-P2"
+    text: "Default to a join-free consumption surface; joins must be unnecessary for charting."
+  - id: "WTT-P3"
+    text: "Grain must be explicit and validated; if ambiguous, split into multiple tables or require human decision."
+  - id: "WTT-P4"
+    text: "Optimize for semantic clarity over storage efficiency."
+  - id: "WTT-P5"
+    text: "Every output column must trace to one or more source columns with an explicit transform."
+
+naming_conventions:
+  table:
+    case: "snake_case"
+    suffix: "_wide"
+    max_length: 63
+  column:
+    case: "snake_case"
+    max_length: 63
+    avoid:
+      - "id"          # prefer explicit: customer_id, kpi_id
+      - "value"       # prefer metric_value, amount_value, duration_seconds
+      - "misc"
+  reserved_columns:
+    dq_flags: "_dq_flags"
+    lineage_run_id: "_run_id"
+    lineage_ingested_at: "_ingested_at_utc"
+    lineage_source_name: "_source_name"
+
+target_storage_defaults:
+  preferred_types:
+    string: "TEXT"
+    integer: "BIGINT"
+    decimal: "DECIMAL(38,10)"
+    boolean: "BOOLEAN"
+    date: "DATE"
+    datetime: "TIMESTAMP"
+    json: "JSON"
+  constraints:
+    allow_primary_key: false
+    allow_foreign_keys: false
+    allow_not_null:
+      only_for_roles: ["key_dimension", "time_dimension", "measure"]
+      when_confident: true
+  indexes:
+    enabled: true
+    default_index_on:
+      - "grain_keys"
+      - "event_date|event_month (if present)"
+
+wide_table_definition_rules:
+
+  # --- Phase 1: Grain discovery ---
+  grain_discovery:
+    objective: "Determine what one row represents and select stable keys for that row."
+    required_output:
+      - "grain.description"
+      - "grain.keys[]"
+      - "grain.time_axis (if applicable)"
+      - "confidence"
+      - "ambiguities[] (if any)"
+    heuristics:
+      - id: "WTT-G1"
+        name: "Identifier candidates"
+        logic: >
+          Prefer columns with low null_rate and medium/high distinct_rate as potential keys.
+          Consider profiler entity_id_column_candidates and column role_hints.
+      - id: "WTT-G2"
+        name: "Time axis candidates"
+        logic: >
+          Prefer columns flagged as timestamp/date, or those with names matching
+          (?i)date|time|month|week|year|period|as_of|snapshot.
+      - id: "WTT-G3"
+        name: "Measure detection"
+        logic: >
+          Measures are numeric/logical_type in {integer,decimal} or columns that look numeric after cleaning;
+          exclude obvious codes/ids.
+      - id: "WTT-G4"
+        name: "Grain validation via repetition"
+        logic: >
+          If a candidate key set is chosen, verify low duplicate rate for that key set.
+          If duplicates exist, either (a) add disambiguating keys, (b) aggregate measures, or (c) split tables.
+      - id: "WTT-G5"
+        name: "Split when grains conflict"
+        logic: >
+          If multiple time columns represent different cadences or entities, create separate wide tables,
+          each with its own grain and time axis.
+    ambiguity_handling:
+      if_confidence_below: 0.75
+      action: "human_required"
+      produce_alternatives: true
+      max_alternatives: 3
+
+  # --- Phase 2: Column role classification ---
+  column_roles:
+    objective: "Assign exactly one role to each source column."
+    roles:
+      key_dimension:
+        description: "Columns that define the row identity (grain keys)."
+        allowed_in_wide: true
+      analytic_dimension:
+        description: "Group-by / filter fields with stable categories."
+        allowed_in_wide: true
+      time_dimension:
+        description: "Canonical time columns used for charting."
+        allowed_in_wide: true
+      measure:
+        description: "Numeric values intended for aggregation."
+        allowed_in_wide: true
+      metric_descriptor:
+        description: "Describes how to interpret/format a measure (units, direction, format)."
+        allowed_in_wide: true
+      free_text:
+        description: "Narrative remarks/comments; excluded from wide table by default."
+        allowed_in_wide: false
+      metadata:
+        description: "Lineage/provenance/process fields; excluded from wide table by default."
+        allowed_in_wide: false
+      identifier_code:
+        description: "Opaque codes/IDs that should be resolved or renamed."
+        allowed_in_wide: conditional
+    default_rules:
+      - id: "WTT-R1"
+        when:
+          role_hints_contains: "identifier"
+        assign: "identifier_code"
+      - id: "WTT-R2"
+        when:
+          role_hints_contains: "timestamp"
+        assign: "time_dimension"
+      - id: "WTT-R3"
+        when:
+          logical_type_in: ["integer", "decimal"]
+        assign: "measure"
+      - id: "WTT-R4"
+        when:
+          role_hints_contains: "free_text"
+        assign: "free_text"
+      - id: "WTT-R5"
+        when:
+          column_name_regex: "(?i)status|state|flag"
+        assign: "analytic_dimension"
+    conflict_resolution:
+      - rule: "If measure but distinct_rate is extremely low and values are Yes/No-like, reclassify as analytic_dimension/boolean."
+      - rule: "If identifier_code is human-readable (short text labels) and used for grouping, upgrade to analytic_dimension."
+      - rule: "If time_dimension parse confidence is low, treat as metadata and require human."
+
+  # --- Phase 3: Semantic shaping for AI readability ---
+  semantic_shaping:
+    objective: "Make the resulting wide table self-explanatory to a model and safe for charting."
+    rules:
+      - id: "WTT-S1"
+        name: "Resolve/rename opaque identifiers"
+        requirement: >
+          If a column is identifier_code, attempt to rename to explicit meaning (e.g., vp_code->vp, kpi_id->kpi_code).
+          Prefer human-readable labels if present in the same file; otherwise keep the code but rename clearly.
+        action:
+          rename_strategy: "explicit_semantic_prefix"
+      - id: "WTT-S2"
+        name: "Canonical time columns"
+        requirement: >
+          Produce canonical time fields if any time axis exists:
+          event_date, event_month, event_year, event_timestamp (as available).
+        action:
+          add_columns:
+            - "event_date"
+            - "event_month"
+            - "event_year"
+            - "event_timestamp"
+          derivation_priority:
+            - "existing date/datetime columns"
+            - "period/month columns"
+      - id: "WTT-S3"
+        name: "Value/format separation"
+        requirement: >
+          Measures must be numeric. Presentation formats belong in metric_descriptor columns
+          (e.g., metric_format, unit, currency_code, duration_unit).
+        action:
+          ensure_numeric_measures: true
+          add_metric_descriptors_when_detected: true
+      - id: "WTT-S4"
+        name: "Category canonicalization"
+        requirement: "Ensure low-cardinality dimensions are canonical and drift-free."
+        action:
+          apply_normalization: true
+      - id: "WTT-S5"
+        name: "Exclude non-analytic columns"
+        requirement: >
+          Exclude free_text and metadata from wide tables. Preserve them in sidecar tables keyed by grain if useful.
+        action:
+          create_sidecar_for_excluded: true
+
+  # --- Phase 4: Table shaping (one or more wide tables) ---
+  table_shaping:
+    objective: "Create one or more wide tables, each with a single stable grain."
+    max_tables: 5
+    split_rules:
+      - id: "WTT-T1"
+        reason: "Conflicting grains"
+        trigger: "multiple_time_axes_or_entities"
+        action: "split_into_multiple_wide_tables"
+      - id: "WTT-T2"
+        reason: "Sparse optional blocks"
+        trigger: "column_block_null_rate_gt"
+        parameters:
+          null_rate_threshold: 0.85
+        action: "move_block_to_sidecar"
+      - id: "WTT-T3"
+        reason: "Measure families"
+        trigger: "many_measures_with_shared_dimensions"
+        action: "keep_single_table_if_grain_consistent"
+    allowed_shapes:
+      - "entity_snapshot_wide"
+      - "event_wide"
+      - "kpi_observation_wide"
+      - "transaction_wide"
+      - "periodic_summary_wide"
+
+  # --- Phase 5: Output schema + load plan ---
+  schema_output:
+    objective: "Emit DDL-ready schema and a deterministic load mapping."
+    required_fields_per_table:
+      - "table_name"
+      - "grain.description"
+      - "grain.keys"
+      - "columns[]: {name, role, type, nullable, source_columns[], transform}"
+      - "excluded_columns[]: {source_column, reason}"
+      - "sidecar_tables[] (optional)"
+      - "load_plan"
+    load_plan:
+      format: "declarative_mapping"
+      must_include:
+        - "source_entity"
+        - "target_table"
+        - "column_mappings"
+        - "derived_columns"
+        - "type_casts"
+        - "null_handling_notes"
+      prohibited:
+        - "implicit joins"
+        - "unexplained aggregations"
+
+validation:
+  litmus_tests:
+    - id: "WTT-V1"
+      text: "A dashboard can be generated from each wide table without joins."
+      fail_action: "reject_plan"
+    - id: "WTT-V2"
+      text: "Each table has exactly one grain and an explicit key set."
+      fail_action: "require_human"
+    - id: "WTT-V3"
+      text: "Every output column traces to a source column or a documented derivation."
+      fail_action: "reject_plan"
+    - id: "WTT-V4"
+      text: "Measures are numeric and aggregation-safe."
+      fail_action: "reject_plan"
