@@ -2,3 +2,5 @@ flask
 pandas
 pyyaml
 openpyxl
+fastapi
+uvicorn
