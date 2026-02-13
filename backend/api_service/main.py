@@ -140,8 +140,8 @@ def save_session_state(session_id: str, state: Dict):
 
 # ============== API Endpoints ==============
 
-@app.get("/")
-def root():
+@app.get("/api/health")
+def health_check():
     """Health check endpoint"""
     return {
         "status": "online",
@@ -157,6 +157,15 @@ def root():
             "sessions": "/api/sessions"
         }
     }
+
+
+@app.get("/", response_class=HTMLResponse)
+async def root():
+    """Serve the frontend at root"""
+    index_path = FRONTEND_DIR / "index.html"
+    if index_path.exists():
+        return index_path.read_text()
+    return HTMLResponse(content="<h1>Frontend not built</h1>", status_code=404)
 
 
 @app.get("/api/sessions")
