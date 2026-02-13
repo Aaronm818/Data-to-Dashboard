@@ -14,7 +14,7 @@ data/outputs/
 
 # Frontend build artifacts
 frontend/node_modules/
-frontend/dist/
+# frontend/dist/ - committed for Railway deployment
 
 # Test output
 tests/test_output/
