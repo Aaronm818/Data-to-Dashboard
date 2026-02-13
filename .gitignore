@@ -9,3 +9,16 @@ output/
 input/*
 !input/.gitkeep
 uploads/
+data/uploads/
+data/outputs/
+
+# Frontend build artifacts
+frontend/node_modules/
+frontend/dist/
+
+# Test output
+tests/test_output/
+
+# Legacy prototype data
+legacy_prototype/input/
+legacy_prototype/output/

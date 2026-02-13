@@ -14,7 +14,8 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, UploadFile, File, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, FileResponse
+from fastapi.responses import JSONResponse, FileResponse, HTMLResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import pandas as pd
 
@@ -75,6 +76,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Static files directory for frontend
+FRONTEND_DIR = BASE_DIR / "frontend" / "dist"
 
 
 # ============== Pydantic Models ==============
@@ -171,31 +175,44 @@ def list_sessions():
     }
 
 
+def clear_upload_folder():
+    """Delete all files in the upload folder"""
+    for file_path in UPLOAD_FOLDER.iterdir():
+        if file_path.is_file():
+            file_path.unlink()
+
+
 @app.post("/api/upload", response_model=SessionResponse)
 async def upload_file(file: UploadFile = File(...)):
     """
-    Step 1: Upload a CSV or Excel file
+    Step 1: Upload a CSV file
     Returns a session_id to track the pipeline progress
+    Note: Only CSV files are accepted. Prior uploads are deleted.
     """
-    # Validate file type
-    allowed_extensions = {'.csv', '.xlsx', '.xls'}
+    # Validate file type - CSV only
     file_ext = Path(file.filename).suffix.lower()
-    
-    if file_ext not in allowed_extensions:
+
+    if file_ext != '.csv':
         raise HTTPException(
-            status_code=400, 
-            detail=f"Invalid file type. Allowed: {', '.join(allowed_extensions)}"
+            status_code=400,
+            detail="Invalid file type. Only CSV files (.csv) are accepted."
         )
-    
+
+    # Clear all prior uploads (only one file at a time)
+    clear_upload_folder()
+
+    # Clear all existing sessions
+    sessions.clear()
+
     # Generate session
     session_id = generate_session_id()
-    
+
     # Save file
     file_path = UPLOAD_FOLDER / f"{session_id}_{file.filename}"
     with open(file_path, "wb") as buffer:
         content = await file.read()
         buffer.write(content)
-    
+
     # Initialize session
     sessions[session_id] = {
         "session_id": session_id,
@@ -205,7 +222,7 @@ async def upload_file(file: UploadFile = File(...)):
         "created_at": datetime.utcnow().isoformat(),
         "steps_completed": ["upload"]
     }
-    
+
     return SessionResponse(
         session_id=session_id,
         message=f"File '{file.filename}' uploaded successfully"
@@ -612,6 +629,21 @@ async def delete_session(session_id: str):
         return {"message": f"Session {session_id} deleted"}
     
     raise HTTPException(status_code=404, detail=f"Session {session_id} not found")
+
+
+# ============== Frontend Routes ==============
+
+# Mount static files if frontend is built
+if FRONTEND_DIR.exists():
+    app.mount("/assets", StaticFiles(directory=FRONTEND_DIR / "assets"), name="assets")
+
+    @app.get("/{full_path:path}", response_class=HTMLResponse)
+    async def serve_frontend(full_path: str):
+        """Serve the frontend SPA for all non-API routes"""
+        index_path = FRONTEND_DIR / "index.html"
+        if index_path.exists():
+            return index_path.read_text()
+        return HTMLResponse(content="<h1>Frontend not built</h1>", status_code=404)
 
 
 # ============== Run Server ==============
