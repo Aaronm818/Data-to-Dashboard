@@ -27,6 +27,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "ingestion_engine" / "core
 from core.data_profiler import DataProfiler, NumpyEncoder
 from core.remediation_engine import RemediationEngine
 from core.output_manager import StandardOutputManager
+from core.profile_report_generator import ProfileReportGenerator
 
 # Try to import wide table transformer (may need additional setup)
 try:
@@ -41,6 +42,7 @@ BASE_DIR = Path(__file__).parent.parent.parent
 UPLOAD_FOLDER = BASE_DIR / "data" / "uploads"
 OUTPUT_FOLDER = BASE_DIR / "data" / "outputs"
 CONFIG_PATH = BASE_DIR / "backend" / "ingestion_engine" / "config" / "dq_policy_spec.yaml"
+PROFILE_TEMPLATE_PATH = BASE_DIR / "backend" / "ingestion_engine" / "config" / "profile_report_template_light.html"
 
 # Ensure directories exist
 UPLOAD_FOLDER.mkdir(parents=True, exist_ok=True)
@@ -242,15 +244,15 @@ async def upload_file(file: UploadFile = File(...)):
 async def profile_data(session_id: str):
     """
     Step 2: Profile the uploaded data
-    Runs data quality analysis and returns issues
+    Runs data quality analysis and returns issues with HTML report
     """
     session = get_session(session_id)
-    
+
     if session["status"] not in ["uploaded", "profiled"]:
         raise HTTPException(status_code=400, detail="File must be uploaded first")
-    
+
     file_path = session["file_path"]
-    
+
     try:
         # Run profiler
         profiler = DataProfiler(
@@ -258,41 +260,51 @@ async def profile_data(session_id: str):
             policy_path=str(CONFIG_PATH)
         )
         profile_data = profiler.generate_profile()
-        
-        # Save profile
-        profile_path = UPLOAD_FOLDER / f"{session_id}_profile.json"
+
+        # Save profile JSON
+        profile_path = OUTPUT_FOLDER / f"{session_id}_profile.json"
         with open(profile_path, "w") as f:
             json.dump(profile_data, f, indent=2, cls=NumpyEncoder)
-        
+
+        # Generate HTML report using light theme template
+        report_generator = ProfileReportGenerator(template_path=str(PROFILE_TEMPLATE_PATH))
+        report_path = OUTPUT_FOLDER / f"{session_id}_profile_report.html"
+        report_generator.generate_report_from_dict(profile_data, str(report_path))
+
+        # Read the generated HTML for response
+        with open(report_path, "r", encoding="utf-8") as f:
+            html_report = f.read()
+
         # Calculate scores for frontend
         issues_summary = profile_data.get("issues_summary", {})
         total_issues = issues_summary.get("total_issues", 0)
-        
+
         # Get total columns and calculate completeness
         entities = profile_data.get("entities", [])
         total_columns = sum(len(e.get("columns", [])) for e in entities)
         total_rows = sum(e.get("row_summary", {}).get("row_count", 0) for e in entities)
-        
+
         # Calculate completeness score (simplified)
         completeness_scores = []
         for entity in entities:
             for col in entity.get("columns", []):
                 null_rate = col.get("statistics", {}).get("completeness", {}).get("null_rate", 0)
                 completeness_scores.append(1 - null_rate)
-        
+
         avg_completeness = sum(completeness_scores) / len(completeness_scores) if completeness_scores else 1.0
-        
+
         # Quality score based on issues
         quality_score = max(0, 1 - (total_issues / max(total_columns * 2, 1)))
-        
+
         # Update session
         save_session_state(session_id, {
             "status": "profiled",
             "profile_path": str(profile_path),
+            "report_path": str(report_path),
             "profile_data": profile_data,
             "steps_completed": session.get("steps_completed", []) + ["profile"]
         })
-        
+
         return {
             "session_id": session_id,
             "status": "profiled",
@@ -309,9 +321,10 @@ async def profile_data(session_id: str):
                 "entities": len(entities),
                 "issues_by_severity": issues_summary.get("by_severity", {})
             },
+            "html_report": html_report,
             "profile": profile_data
         }
-        
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Profiling failed: {str(e)}")
 

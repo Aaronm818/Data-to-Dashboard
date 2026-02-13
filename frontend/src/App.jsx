@@ -17,6 +17,12 @@ function App() {
   const [error, setError] = useState(null)
   const [dragActive, setDragActive] = useState(false)
 
+  // Profile state
+  const [isProfiling, setIsProfiling] = useState(false)
+  const [profileError, setProfileError] = useState(null)
+  const [profileHtml, setProfileHtml] = useState(null)
+  const [profileScores, setProfileScores] = useState(null)
+
   const handleDrag = useCallback((e) => {
     e.preventDefault()
     e.stopPropagation()
@@ -51,6 +57,10 @@ function App() {
     setUploadedFile(null)
     setSessionId(null)
     setCompletedSteps([])
+    // Reset profile state on new upload
+    setProfileHtml(null)
+    setProfileScores(null)
+    setProfileError(null)
 
     const formData = new FormData()
     formData.append('file', file)
@@ -85,9 +95,37 @@ function App() {
     }
   }
 
+  const runProfile = async () => {
+    if (!sessionId) return
+
+    setIsProfiling(true)
+    setProfileError(null)
+
+    try {
+      const response = await fetch(`/api/profile/${sessionId}`)
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.detail || 'Profiling failed')
+      }
+
+      const data = await response.json()
+      setProfileHtml(data.html_report)
+      setProfileScores(data.scores)
+
+      // Mark profile as completed
+      if (!completedSteps.includes('profile')) {
+        setCompletedSteps([...completedSteps, 'profile'])
+      }
+    } catch (err) {
+      setProfileError(err.message)
+    } finally {
+      setIsProfiling(false)
+    }
+  }
+
   const canNavigateTo = (stepId) => {
     const stepIndex = STEPS.findIndex(s => s.id === stepId)
-    const currentIndex = STEPS.findIndex(s => s.id === currentStep)
 
     // Can always go to upload
     if (stepId === 'upload') return true
@@ -127,7 +165,7 @@ function App() {
       </nav>
 
       {/* Content Area */}
-      <main className="content">
+      <main className={`content ${currentStep === 'profile' && profileHtml ? 'content-wide' : ''}`}>
         {currentStep === 'upload' && (
           <div className="upload-section">
             <h2>Upload Your Data</h2>
@@ -199,11 +237,69 @@ function App() {
         )}
 
         {currentStep === 'profile' && (
-          <div className="step-placeholder">
-            <h2>🔍 Data Profiling</h2>
-            <p>Analyze your data quality and structure.</p>
-            <p className="session-info">Session: {sessionId}</p>
-            <p className="coming-soon">Coming in next iteration</p>
+          <div className="profile-section">
+            {!profileHtml ? (
+              // Show run profile button when no report exists
+              <div className="profile-start">
+                <h2>Data Quality Profile</h2>
+                <p className="description">
+                  Analyze your data for quality issues, missing values, and potential problems.
+                </p>
+                <p className="file-info">
+                  File: <strong>{uploadedFile}</strong>
+                </p>
+
+                {profileError && (
+                  <div className="error-message">
+                    <span className="error-icon">⚠️</span>
+                    {profileError}
+                  </div>
+                )}
+
+                <button
+                  className="run-profile-button"
+                  onClick={runProfile}
+                  disabled={isProfiling}
+                >
+                  {isProfiling ? (
+                    <>
+                      <span className="button-spinner"></span>
+                      Analyzing Data...
+                    </>
+                  ) : (
+                    <>🔍 Run Profile</>
+                  )}
+                </button>
+              </div>
+            ) : (
+              // Show the HTML report
+              <div className="profile-report">
+                <div className="report-header">
+                  <h2>Profile Results</h2>
+                  <div className="report-actions">
+                    <button
+                      className="rerun-button"
+                      onClick={runProfile}
+                      disabled={isProfiling}
+                    >
+                      {isProfiling ? 'Re-analyzing...' : '↻ Re-run Profile'}
+                    </button>
+                    <button
+                      className="next-button-small"
+                      onClick={() => setCurrentStep('remediate')}
+                    >
+                      Continue to Remediate →
+                    </button>
+                  </div>
+                </div>
+
+                {/* Embedded HTML Report */}
+                <div
+                  className="report-container"
+                  dangerouslySetInnerHTML={{ __html: profileHtml }}
+                />
+              </div>
+            )}
           </div>
         )}
 
