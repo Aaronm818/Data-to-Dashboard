@@ -1,6 +1,8 @@
-flask
+fastapi
+uvicorn[standard]
 pandas
 pyyaml
 openpyxl
-fastapi
-uvicorn
+python-multipart
+numpy
+aiofiles
